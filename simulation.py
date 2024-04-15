@@ -98,9 +98,27 @@ def constant_mu_simu():
 
     
 if __name__=='__main__':
+    l = -0.05
+    c = 10
+    N = 500
+    delta_t = 1
+    sigma_w = 0.05
+    sigma_mu = 0.015*1e-3
+    mu0 = 0.05
+    alpha = 1.6
+    k_v = 100 # 10
     
-    constant_mu_simu()
+    # constant_mu_simu()
     
     data_read = np.load('experiments/data/x_ns.npz')
     x_dashed = data_read['x']
+    y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]*(alpha>1)
 
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.plot(y_ns[:,0])
+    plt.ylabel('displacement')
+    plt.subplot(2,1,2)
+    plt.plot(y_ns[:,1])
+    plt.ylabel('velocity')
+    plt.savefig('experiments/figure/centered_x.png')
