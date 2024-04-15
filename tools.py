@@ -36,7 +36,7 @@ def int_exp_lambda_dt(l, delta_t):
     return (np.exp(l*delta_t)-1)/l
 
 def int_t_exp_lambda_dt(l, delta_t):
-    return delta_t*np.exp(l*delta_t)/l - int_exp_lambda_dt(l, delta_t)
+    return delta_t*np.exp(l*delta_t)/l - int_exp_lambda_dt(l, delta_t)/l
 
 def int_ft(l, delta_t):
     """return integral of f(t) = e^{\lambda t}h over s to t

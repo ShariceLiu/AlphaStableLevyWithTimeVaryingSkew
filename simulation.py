@@ -68,7 +68,7 @@ def constant_mu_simu():
     sigma_mu = 0.015*1e-3
     mu0 = 0.05
     alpha = 1.6
-    k_v = 700*4 # 10
+    k_v = 100 # 10
     
     x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0)
     y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]*(alpha>1)
@@ -87,21 +87,17 @@ def constant_mu_simu():
     plt.ylabel('velocity')
     plt.savefig('experiments/figure/const_mu005_x.png')
     
-    y_ns += np.random.normal(0, sigma_w*k_v, (N, 2))
+    y_ns_noisy = y_ns+np.random.normal(0, sigma_w*k_v, (N, 2))
+    plt.figure()
+    plt.plot(y_ns[:,0])
+    plt.plot(y_ns_noisy[:,0])
+    plt.legend(['True state', 'Noisy observation'])
+    plt.savefig('experiments/figure/const_mu005_xy.png')
     # save
-    np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns, mu0 = 0.05, c = 10, l = -0.05, alpha = 1.6, sigma_w = 0.05, sigma_mu = 0.015e-3, allow_pickle=True)
+    np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = 0.05, c = 10, l = -0.05, alpha = 1.6, sigma_w = 0.05, sigma_mu = 0.015e-3, allow_pickle=True)
 
     
 if __name__=='__main__':
-    l = -0.05
-    c = 10
-    N = 500
-    delta_t = 1
-    sigma_w = 0.05
-    sigma_mu = 0.015*1e-3
-    mu0 = 0.05
-    alpha = 1.6
-    k_v = 700*4 # 10
     
     constant_mu_simu()
     
