@@ -109,10 +109,31 @@ class alphaStableJumpsProcesser():
                 
         return sigma_mu**2*Smu* self.delta_t**(2/self.alpha)
     
-    def mean_s_t(self, mus = np.array([0,0])):
+    def hi_fi_vi(self, sigma_mu):
+        """
+        return sum h(Gamma_i)f(V_i)V_i sigma_mu^2
+        """
+        sum_hfv= 0
+        for i in range(len(self.gammas)):
+            sum_hfv+= self.hGammas[i]*self.fVs[i,:]*self.vs[i]
+            
+        return sum_hfv*self.delta_t**(1/self.alpha)*sigma_mu**2
+    
+    def hi_fi_intQ(self, sigma_mu, l):
+        """
+        return sigma_mu^2 sum h(Gamma_i)f(V_i) int_0^{V_i} Q(dt - u)du
+        """
+        sum_hfQ = 0
+        for i in range(len(self.gammas)):
+            # int_0^{V_i} = int_0^{dt} - int_0^{dt-V_i}
+            sum_hfQ+= self.hGammas[i]*np.outer(self.fVs[i,:],(int_qt(l, self.delta_t) - int_qt(l, self.delta_t-self.vs[i])))
+            
+        return sum_hfQ*self.delta_t**(1/self.alpha)*sigma_mu**2
+    
+    def mean_s_t(self, mus = 1):
         """reurn row vectors, if mus = None, consider mu = 1"""
-        if not mus.all():
-            mus = [1]*len(self.gammas)
+        if type(mus) is int:
+            mus = [mus]*len(self.gammas)
         mean_st= 0
         for i in range(len(self.gammas)):
             mean_st+= self.hGammas[i]*self.fVs[i,:]*mus[i]
@@ -137,7 +158,7 @@ class alphaStableJumpsProcesser():
         int_mus = sum(mus*delta_vs)
         return int_mus
         
-def generate_jumps(c, T, sigma_mu = None):
+def generate_jumps(c, T, sigma_mu = -1):
     """
     generate gammas and vs, 
     if sigma_mu not equal to None, return with mus, mus are 1 length longer, including the mu at time T
@@ -155,7 +176,7 @@ def generate_jumps(c, T, sigma_mu = None):
     gammas = [x for _, x in sorted(zip(vs, gammas), key=lambda pair: pair[0])]
     vs.sort()
 
-    if sigma_mu:
+    if sigma_mu>=0:
         v0 = 0
         u1 = 0
         mus = np.zeros(len(vs)+1)
@@ -184,7 +205,7 @@ def transition_matrix(sum_hGamma_ft, delta_t, l, with_int = True):
         matrix[-1,-1] = 1
     return matrix
 
-def noise_variance_C(S_mu, S_st, delta_t, l, sigma_mu, with_int = True):
+def noise_variance_C(S_mu, S_st, hi_fi_intQ, hi_fi_vi, delta_t, l, sigma_mu, with_int = True):
     if with_int:
         C = np.zeros((5,5))
         C[:2,:2] = S_mu + S_st
@@ -192,9 +213,15 @@ def noise_variance_C(S_mu, S_st, delta_t, l, sigma_mu, with_int = True):
         C[2:4,-1] = int_qt(l, delta_t)*sigma_mu**2
         C[-1,2:4] = C[2:4,-1]
         C[-1,-1] = delta_t*sigma_mu**2
+        C[:2,2:4] = hi_fi_intQ
+        C[2:4,:2] = hi_fi_intQ.T
+        C[:2,-1] = hi_fi_vi
+        C[-1,:2] = hi_fi_vi
         
     else:
         C = np.zeros((3,3))
         C[:2,:2] = S_mu + S_st
         C[-1,-1] = delta_t*sigma_mu**2
+        C[:2,-1] = hi_fi_vi
+        C[-1,:2] = hi_fi_vi
     return C
