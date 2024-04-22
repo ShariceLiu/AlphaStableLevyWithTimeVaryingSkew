@@ -112,7 +112,7 @@ if __name__=='__main__':
     N = 500
     delta_t = 1
     sigma_w = 0.05
-    sigma_mu = 0.03
+    sigma_mu = 0.05
     mu0 = 0.05
     alpha = 1.6
     k_v = 500

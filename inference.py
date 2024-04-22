@@ -75,9 +75,9 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
             norm_sigma_n_prev_n = sigma_n_prev_n /sigma_w**2
             E_ns[m,p] = -(y_n-y_hat_n_prev_n)**2/(norm_sigma_n_prev_n)/2
             beta_w_post_p = beta_w - sum(E_ns[:,p])
-            log_like = -0.5*np.log(sigma_n_prev_n)-(alpha_w+m*2/2)*np.log(beta_w_post_p)\
-                    +((m-1)*2/2+alpha_w)*np.log(beta_w - sum(E_ns[:m,p]))+\
-                    scipy.special.loggamma(m*2/2+alpha_w)-scipy.special.loggamma(n*2/2+alpha_w) # -2/2*np.log(2*np.pi)
+            log_like = -0.5*np.log(sigma_n_prev_n)-(alpha_w+m/2)*np.log(beta_w_post_p)\
+                    +((m-1)/2+alpha_w)*np.log(beta_w - sum(E_ns[:m,p]))+\
+                    scipy.special.loggamma(m/2+alpha_w)-scipy.special.loggamma(n/2+alpha_w) # -2/2*np.log(2*np.pi)
             n_log_ws[m,p] = n_log_ws[n, p]+ log_like
 
         # normalise weights
@@ -101,7 +101,7 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.0
     for n in range(N):
         alpha_n = alpha_w + (n+1)
         for p in range(num_particles):
-            betas[n,p] = beta_w - sum(E_ns[p,:(n+2)])
+            betas[n,p] = beta_w - sum(E_ns[:(n+2),p])
             mean_sigmas[n,p] = betas[n,p]/(alpha_n-1)
             var_sigmas[n,p] = max(0, betas[n,p]**2/(alpha_n-1)**2/(alpha_n-2))
 
@@ -110,14 +110,14 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.0
     
 
     for i in range(N):
-        alpha_n = alpha_w + i
+        alpha_n = alpha_w + i/2
         for d in range(D):
             average[i,d]=np.dot(n_mus[i,:,d], np.exp(n_log_ws[i,:]))
             for j in range(D):
                 if i<=2:
                     var_x_ij = n_vars[i,:,d,j]*sigma_w**2
                 else:
-                    var_x_ij = n_vars[i,:,d,j]*betas[i,:]/(alpha_n-1)
+                    var_x_ij = n_vars[i,:,d,j]*betas[i,:]/(alpha_n-1/2)
                 avg_P[i,d,j] = np.dot(var_x_ij, np.exp(n_log_ws[i,:]))+\
                 np.dot((n_mus[i,:,d]-average[i,d])*(n_mus[i,:,j]-average[i,j]), np.exp(n_log_ws[i,:]))
                 
@@ -126,7 +126,7 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.0
         tot_mean_sigma[i]=np.dot(mean_sigmas[i,:], np.exp(n_log_ws[i,:]))
         tot_var_sigma[i] = np.dot(var_sigmas[i,:], np.exp(n_log_ws[i,:])) + np.dot((mean_sigmas[i,:]-tot_mean_sigma[i])*(mean_sigmas[i,:]-tot_mean_sigma[i]),np.exp(n_log_ws[i,:]))
     
-    alpha = alpha_w + N
+    alpha = alpha_w + N/2
     xs = np.linspace(sigma_w**2*0.8,sigma_w**2*1.3,100)
     fxs = 0
     for p in range(num_particles):
@@ -168,12 +168,13 @@ def plot_result_from_stored(datapath = 'experiments/data/x_ns.npz', resultpath =
     plt.figure()
     plt.subplot(2,1,1)
     plt.ylabel('displacement')
-    plt.plot(average[:,0] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2]*(alpha>1))
+    pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]*(alpha>1)
+    plt.plot(pred_xs[:,0])
     plt.plot(x_dashed[:,0]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2]*(alpha>1))
     plt.legend(['pred','true'])
     plt.subplot(2,1,2)
     plt.ylabel('velocity')
-    plt.plot(average[:,1] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,3]*(alpha>1))
+    plt.plot(pred_xs[:,1])
     plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3]*(alpha>1))
     plt.savefig(f'experiments/figure/particle_filter/xs_{int(alpha*10)}.png')
     
@@ -205,6 +206,6 @@ def plot_result_from_stored(datapath = 'experiments/data/x_ns.npz', resultpath =
     
     
 if __name__=='__main__':
-    inference_filtering(num_particles = 200, datapath = 'experiments/data/x_ns.npz') 
+    inference_filtering(num_particles = 500, datapath = 'experiments/data/x_ns.npz') 
     plot_result_from_stored()
     
