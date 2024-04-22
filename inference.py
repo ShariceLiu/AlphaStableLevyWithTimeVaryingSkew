@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tools import *
 import scipy
-from simulation import forward_simulation_1d_w_integrals
+# from simulation import forward_simulation_1d_w_integrals
+from scipy.stats import invgamma
+from tqdm import tqdm
 
 def resample(log_weight_p, mu_p, var_p, E_ns):
     """resample particles, input/output arrays"""
@@ -29,7 +31,7 @@ def kalman_filter(A, C, obs_matrix, noise_sig, mu, var, y_n):
     return mu_n_n, var_n_n, sigma_n_prev_n, y_hat_n_prev_n
     
 
-def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,trans_As, noise_Cs, alpha_w = 0.000000000001,beta_w = 0.000000000001):
+def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, delta_t, trans_As = None, noise_Cs=None, alpha_w = 0.000000000001,beta_w = 0.000000000001):
     """P: number of particles"""
     N = len(y_ns)
     n_mus = np.zeros((N, P, 5))
@@ -47,11 +49,11 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,trans_
     # some useful constants
     observation_matrix = np.array([1,0,-alpha/(alpha-1) * c**(1-1/alpha)*(alpha>1),0,0])
 
-    for n in range(N-1):
+    for n in tqdm(range(N-1)):
         m = n+1
         y_n = y_ns[m]
         
-        if n%5 == 0: # resample
+        if n%2 == 0: # resample
             n_log_ws[n], n_mus[n], n_vars[n], E_ns[n] = resample(n_log_ws[n], n_mus[n], n_vars[n], E_ns[n])
         
         # update
@@ -85,7 +87,7 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,trans_
 
     return n_mus, n_vars, n_log_ws, E_ns
 
-def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, alpha_w = 0.000000000001,beta_w = 0.000000000001):
+def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.000000000001,beta_w = 0.000000000001):
     # examine data
     (N, num_particles, D) = n_mus.shape
     
@@ -105,6 +107,7 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, alpha_w = 0.0000000000
 
     tot_mean_sigma = np.zeros(N)
     tot_var_sigma = np.zeros(N)
+    
 
     for i in range(N):
         alpha_n = alpha_w + i
@@ -122,32 +125,46 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, alpha_w = 0.0000000000
 
         tot_mean_sigma[i]=np.dot(mean_sigmas[i,:], np.exp(n_log_ws[i,:]))
         tot_var_sigma[i] = np.dot(var_sigmas[i,:], np.exp(n_log_ws[i,:])) + np.dot((mean_sigmas[i,:]-tot_mean_sigma[i])*(mean_sigmas[i,:]-tot_mean_sigma[i]),np.exp(n_log_ws[i,:]))
-
-    return average, std3, betas, tot_mean_sigma, tot_var_sigma
-
     
-if __name__=='__main__':
-    l = -0.05
-    c = 10
-    N = 500
-    delta_t = 1
-    sigma_w = 0.05
-    sigma_mu = 0.03
-    mu0 = 0.05
-    alpha = 1.6
-    k_v = 100 # 10
-    
-    data_read = np.load('experiments/data/x_ns.npz')
+    alpha = alpha_w + N
+    xs = np.linspace(sigma_w**2*0.8,sigma_w**2*1.3,100)
+    fxs = 0
+    for p in range(num_particles):
+        x_beta = xs/betas[-1,p]
+        pdf = invgamma.pdf(x_beta, alpha)/betas[-1,p]*np.exp(n_log_ws[-1,p])
+        fxs += pdf
+
+    return average, std3, betas, xs, fxs
+
+def inference_filtering(num_particles = 100, datapath = 'experiments/data/x_ns.npz'):
+    data_read = np.load(datapath)
     x_dashed = data_read['x'] # true, uncentered, size (N, 5)
-    y_ns = data_read['y'][:,0] # observation, size (N, 2)
+    y_ns = data_read['y'][:,0] # observation, size (N, 1)
+    l = data_read['l']
+    c = data_read['c']
+    delta_t = data_read['delta_t']
+    sigma_w = data_read['sigma_w']
+    sigma_mu = data_read['sigma_mu']
+    alpha = data_read['alpha']
+    k_v = data_read['k_v']
 
-    x_dashed, trans_As, noise_Cs = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, returnCA = True)
-    y_ns = x_dashed[:,0]+np.random.normal(0, sigma_w*k_v, N) - alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2]*(alpha>1) 
+    n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
+    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    np.savez('experiments/data/filter_res.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+
+    return average, std3, x_dashed, xs, fxs
+
+def plot_result_from_stored(datapath = 'experiments/data/x_ns.npz', resultpath = 'experiments/data/filter_res.npz'):
+    res = np.load(resultpath)
     
-    num_particles = 100
-    n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, trans_As, noise_Cs)
-    average, std3, betas,_,_ = process_filter_results(n_mus, n_vars, n_log_ws, E_ns)
-
+    data_read = np.load(datapath)
+    x_dashed = data_read['x'] # true, uncentered, size (N, 5)
+    c = data_read['c']
+    sigma_w = data_read['sigma_w']
+    alpha = data_read['alpha']
+    
+    average, std3, _ ,xs, fxs = process_filter_results(res['n_mus'], res['n_vars'], res['n_log_ws'], res['E_ns'], sigma_w )
+    
     plt.figure()
     plt.subplot(2,1,1)
     plt.ylabel('displacement')
@@ -158,7 +175,7 @@ if __name__=='__main__':
     plt.ylabel('velocity')
     plt.plot(average[:,1] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,3]*(alpha>1))
     plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3]*(alpha>1))
-    # plt.savefig('experiments/figure/particle_filter/xs.png')
+    plt.savefig(f'experiments/figure/particle_filter/xs_{int(alpha*10)}.png')
     
     plt.figure()
     plt.subplot(2,1,1)
@@ -166,13 +183,28 @@ if __name__=='__main__':
     plt.plot(average[:,2])
     plt.plot(x_dashed[:,2])
     plt.legend(['pred','true'])
-    plt.fill_between(average[:,2] - std3[:,2], average[:,2] + std3[:,2],
+    plt.ylim([min(average[25:,2] - std3[25:,2]),max(average[25:,2] + std3[25:,2])])
+    plt.fill_between(range(len(average)), average[:,2] - std3[:,2], average[:,2] + std3[:,2],
                  color='gray', alpha=0.2)
     plt.subplot(2,1,2)
     plt.ylabel('mu')
-    plt.fill_between(average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
+    plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
+    plt.fill_between(range(len(average)), average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
                  color='gray', alpha=0.2)
     plt.plot(average[:,-1])
     plt.plot(x_dashed[:,-1])
-    plt.show()
-    # plt.savefig('experiments/figure/particle_filter/mus.png')
+    plt.savefig(f'experiments/figure/particle_filter/mus_{int(alpha*10)}.png')
+    
+    plt.figure()
+    plt.plot(xs*1e3, fxs)
+    plt.axvline(x = sigma_w**2*1e3, color = 'g', label = '$\sigma_W^2$',linestyle='dashed',)
+    plt.xlabel(r'$\sigma_W^2 / 10^{-3}$')
+    plt.legend(['Posterior','True $\sigma_W^2$'])
+    plt.savefig(f'experiments/figure/particle_filter/sigma_{int(alpha*10)}.png')
+    # plt.show()
+    
+    
+if __name__=='__main__':
+    inference_filtering(num_particles = 200, datapath = 'experiments/data/x_ns.npz') 
+    plot_result_from_stored()
+    

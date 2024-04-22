@@ -79,41 +79,31 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
     else:
         return x_dashed
 
-def constant_mu_simu():
-    l = -0.05
-    c = 10
-    N = 500
-    delta_t = 1
-    sigma_w = 0.05
-    sigma_mu = 0.015*1e-3
-    mu0 = 0.05
-    alpha = 0.9
-    k_v = 100 # 10
-    
-    x_dashed_noint, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
-    x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, vses, gammases)
+def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v):
+    # x_dashed_noint, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
+    x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0)
     y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]*(alpha>1)
 
     plt.figure()
     plt.subplot(2,1,1)
     plt.plot(y_ns[:,0])
-    plt.plot(x_dashed_noint[:,0])
     plt.ylabel('displacement')
-    plt.legend(['with int','no int'])
     plt.subplot(2,1,2)
     plt.plot(y_ns[:,1])
-    plt.plot(x_dashed_noint[:,1])
     plt.ylabel('velocity')
-    plt.savefig('experiments/figure/const_mu005_x_noint.png')
+    plt.xlabel('Time (n)')
+    plt.savefig(f'experiments/figure/simulation/xs_a{int(alpha*10)}.png')
     
     y_ns_noisy = y_ns+np.random.normal(0, sigma_w*k_v, (N, 2))
-    # plt.figure()
-    # plt.plot(y_ns[:,0])
-    # plt.plot(y_ns_noisy[:,0])
-    # plt.legend(['True state', 'Noisy observation'])
-    # plt.savefig('experiments/figure/const_mu005_xy.png')
+    plt.figure()
+    plt.plot(y_ns[:,0])
+    plt.scatter(range(N), y_ns_noisy[:,0], color='orange',s=5)
+    plt.xlabel('Time (n)')
+    plt.legend(['True state', 'Noisy observation'])
+    plt.savefig(f'experiments/figure/simulation/ys_a{int(alpha*10)}.png')
     # save
-    # np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = 0.05, c = 10, l = -0.05, alpha = 1.6, sigma_w = 0.05, sigma_mu = 0.015e-3, allow_pickle=True)
+    np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mu, delta_t = delta_t, \
+        k_v = k_v, allow_pickle=True)
 
     
 if __name__=='__main__':
@@ -122,12 +112,12 @@ if __name__=='__main__':
     N = 500
     delta_t = 1
     sigma_w = 0.05
-    sigma_mu = 0.015*1e-3
+    sigma_mu = 0.03
     mu0 = 0.05
-    alpha = 0.9
-    k_v = 100 # 10
+    alpha = 1.6
+    k_v = 500
 
-    constant_mu_simu()
+    simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v)
     
     data_read = np.load('experiments/data/x_ns.npz')
     x_dashed = data_read['x']
