@@ -47,7 +47,7 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
     E_ns = np.zeros((N+1,P)) # store exp likelihood of y
     
     # some useful constants
-    observation_matrix = np.array([1,0,-alpha/(alpha-1) * c**(1-1/alpha)*(alpha>1),0,0])
+    observation_matrix = np.array([1,0,-alpha/(alpha-1) * c**(1-1/alpha),0,0])
 
     for n in tqdm(range(N-1)):
         m = n+1
@@ -168,14 +168,14 @@ def plot_result_from_stored(datapath = 'experiments/data/x_ns.npz', resultpath =
     plt.figure()
     plt.subplot(2,1,1)
     plt.ylabel('displacement')
-    pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]*(alpha>1)
+    pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]
     plt.plot(pred_xs[:,0])
-    plt.plot(x_dashed[:,0]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2]*(alpha>1))
+    plt.plot(x_dashed[:,0]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2])
     plt.legend(['pred','true'])
     plt.subplot(2,1,2)
     plt.ylabel('velocity')
     plt.plot(pred_xs[:,1])
-    plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3]*(alpha>1))
+    plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3])
     plt.savefig(f'experiments/figure/particle_filter/xs_{int(alpha*10)}.png')
     
     plt.figure()

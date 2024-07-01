@@ -72,18 +72,20 @@ class alphaStableJumpsProcesser():
     """
     A class to process jumps
     """
-    def __init__(self, gammas, vs,  alpha, delta_t, l):
+    def __init__(self, gammas, vs,  alpha, delta_t, l=0):
         self.gammas = gammas
         self.vs = vs
         self.alpha = alpha
-        self.lmbda = l
         self.delta_t = delta_t
 
         N = len(gammas)
         fVs = np.zeros((N, 2)) # f_t(V_i), row vectors
         hGammas = gammas**(-1/alpha) # jump size from h(gamma)
-        for i in range(N):
-            fVs[i,:] = eAt(l, (delta_t - vs[i]))@np.array([0,1])
+        if l:
+            for i in range(N):
+                fVs[i,:] = eAt(l, (delta_t - vs[i]))@np.array([0,1])
+        else: #l=0, pure noise
+            fVs[:,0] += 1
             
         self.fVs = fVs
         self.hGammas = hGammas

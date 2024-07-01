@@ -70,7 +70,7 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
         m_st = processer.mean_s_t(mus[:-1])
         integrals[n,:] = processer.int_mu(mus)
         
-        x_dashed[n+1,:2] = eAt(l, delta_t)@ x_dashed[n,:2]+ m_st - alpha/(alpha-1) * c**(1-1/alpha)*integrals[n,:]*(alpha>1) \
+        x_dashed[n+1,:2] = eAt(l, delta_t)@ x_dashed[n,:2]+ m_st - alpha/(alpha-1) * c**(1-1/alpha)*integrals[n,:] \
             + np.random.multivariate_normal([0]*2, S_st)
         x_dashed[n+1,-1] = mus[-1]
     
@@ -79,10 +79,10 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
     else:
         return x_dashed
 
-def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v):
+def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
     # x_dashed_noint, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
     x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0)
-    y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]*(alpha>1)
+    y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]
 
     plt.figure()
     plt.subplot(2,1,1)
@@ -92,7 +92,9 @@ def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v):
     plt.plot(y_ns[:,1])
     plt.ylabel('velocity')
     plt.xlabel('Time (n)')
-    plt.savefig(f'experiments/figure/simulation/xs_a{int(alpha*10)}.png')
+    plt.show()
+    if save:
+        plt.savefig(f'experiments/figure/simulation/xs_a{int(alpha*10)}.png')
     
     y_ns_noisy = y_ns+np.random.normal(0, sigma_w*k_v, (N, 2))
     plt.figure()
@@ -100,25 +102,63 @@ def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v):
     plt.scatter(range(N), y_ns_noisy[:,0], color='orange',s=5)
     plt.xlabel('Time (n)')
     plt.legend(['True state', 'Noisy observation'])
-    plt.savefig(f'experiments/figure/simulation/ys_a{int(alpha*10)}.png')
-    # save
-    np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mu, delta_t = delta_t, \
-        k_v = k_v, allow_pickle=True)
+    plt.show()
+    if save:
+        plt.savefig(f'experiments/figure/simulation/ys_a{int(alpha*10)}.png')
+        # save
+        np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mu, delta_t = delta_t, \
+            k_v = k_v, allow_pickle=True)
 
+def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N):
+    x_dashed = np.zeros((N,2))
+    x_dashed[0,-1] = mu0
+    integrals = np.zeros(N)
+    
+    for n in range(N-1):
+        vs, gammas, mus = generate_jumps(c, delta_t, sigma_mu)
+        mus += x_dashed[n, -1] # mus are from 0, need to add the initial value
+        
+        processer = alphaStableJumpsProcesser(gammas, vs, alpha, delta_t, l=0)
+        # import pdb;pdb.set_trace()
+        S_st = processer.S_s_t(sigma_w)[0,0]
+        m_st = processer.mean_s_t(mus[:-1])[0]
+        integrals[n] = processer.int_mu(mus)
+        
+        x_dashed[n+1] = x_dashed[n]+ m_st - alpha/(alpha-1) * c**(1-1/alpha)*integrals[n] \
+            + np.random.normal(0, S_st)
+        x_dashed[n+1,-1] = mus[-1]
+
+    return x_dashed
     
 if __name__=='__main__':
     l = -0.05
     c = 10
-    N = 500
+    N = 100
     delta_t = 1
     sigma_w = 0.05
-    sigma_mu = 0.05
+    sigma_mu = 0.15*0
     mu0 = 0.05
     alpha = 1.6
     k_v = 500
 
-    simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v)
+    # simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v)
+    x_finals = np.zeros(400)
+    for i in range(400):
+        x_ns = simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N)
+        x_finals[i] = x_ns[-1][0]
+
+    plt.hist(x_finals, bins = 100, range=[-200,200])
+    print(np.mean(x_finals))
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.plot(x_ns[:,0])
+    # plt.ylabel('displacement')
+    # plt.subplot(2,1,2)
+    # plt.plot(x_ns[:,1])
+    # plt.ylabel('Mu')
+    # plt.xlabel('Time (n)')
+    plt.show()
     
-    data_read = np.load('experiments/data/x_ns.npz')
-    x_dashed = data_read['x']
-    y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]*(alpha>1)
+    # data_read = np.load('experiments/data/x_ns.npz')
+    # x_dashed = data_read['x']
+    # y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]
