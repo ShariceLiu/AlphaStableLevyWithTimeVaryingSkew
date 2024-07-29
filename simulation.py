@@ -178,7 +178,7 @@ def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
         np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mu, delta_t = delta_t, \
             k_v = k_v, allow_pickle=True)
 
-def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, save = False):
+def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = None):
     # x_dashed_noint, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
     x_dashed = forward_simulation_2d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mus, mu0s)
 
@@ -193,28 +193,53 @@ def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, save = False)
     plt.subplot(2,1,2)
     plt.plot(y_ns[:,1], y_ns[:,3])
     plt.ylabel('velocity')
-    plt.show()
-    if save:
-        plt.savefig(f'experiments/figure/2d/simulation/xs_a{int(alpha*10)}.png')
+    if savepath:
+        plt.savefig(f'experiments/figure/2d/simulation/xs_a{savepath}.png')
 
-    plt.figure()
-    plt.subplot(2,1,1)
-    plt.plot(y_ns[:,0])
-    plt.ylabel('displacement')
-    plt.subplot(2,1,2)
-    plt.plot(x_dashed[:,4])
-    plt.ylabel('$\mu')
-    plt.xlabel('Time (n)')
-    plt.show()
+    fig, ax1 = plt.subplots()
+    color = 'tab:red'
+    ax1.set_xlabel('Time (n)', fontsize='18')
+    ax1.set_ylabel('$X(t_n)$', color=color, fontsize='18')
+    ax1.plot(x_dashed[:,0], color=color)
+    ax1.tick_params(axis='y')
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    color = 'tab:blue'
+    # ax2.set_ylabel('mean of noise, x', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x_dashed[:,4], color=color)
+    ax2.tick_params(axis='y')
+    ax2.axhline(y=0.0,linestyle='dashed',)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    if savepath:
+        fig.savefig(f'experiments/figure/2d/simulation/x_mu_x_{savepath}.png')
+
+    fig, ax1 = plt.subplots()
+    color = 'tab:red'
+    ax1.set_xlabel('Time (n)', fontsize='18')
+    # ax1.set_ylabel('displacement, x', color=color)
+    ax1.plot(x_dashed[:,5], color=color)
+    ax1.tick_params(axis='y')
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    color = 'tab:blue'
+    ax2.set_ylabel('$\mu(t_n)$', color=color, fontsize='18')  # we already handled the x-label with ax1
+    ax2.plot(x_dashed[:,-1], color=color)
+    ax2.tick_params(axis='y')
+    ax2.axhline(y=0.0,linestyle='dashed',)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    if savepath:
+        fig.savefig(f'experiments/figure/2d/simulation/x_mu_y_{savepath}.png')
 
     plt.figure()
     idxes = np.linspace(0,N,endpoint=False, num=30, dtype=np.int32)
     plt.plot(y_ns[:,0], y_ns[:,2])  
     plt.quiver(y_ns[idxes,0],y_ns[idxes,2], x_dashed[idxes,4], x_dashed[idxes,-1])
     plt.legend(['$X(t)$','$\mu(t)$'])
-    plt.show()
-    if save:
-        plt.savefig(f'experiments/figure/2d/simulation/x_mu_{int(alpha*10)}.png')
+    if savepath:
+        plt.savefig(f'experiments/figure/2d/simulation/x_mu_{savepath}.png')
+    # plt.show()
     
     y_ns_noisy = y_ns+np.random.normal(0, sigma_w*k_v, (N, 4))
     plt.figure()
@@ -222,12 +247,12 @@ def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, save = False)
     plt.scatter(y_ns_noisy[:,0], y_ns_noisy[:,2], color='orange',s=5)
     plt.xlabel('Time (n)')
     plt.legend(['True state', 'Noisy observation'])
-    plt.show()
-    if save:
-        plt.savefig(f'experiments/figure/2d/simulation/ys_a{int(alpha*10)}.png')
+    if savepath:
+        plt.savefig(f'experiments/figure/2d/simulation/ys_a{savepath}.png')
         # save
-        np.savez('experiments/data/2d/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0s, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mus, delta_t = delta_t, \
+        np.savez(f'experiments/data/2d/x_ns{savepath}.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0s, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mus, delta_t = delta_t, \
             k_v = k_v, allow_pickle=True)
+    # plt.show()
 
 def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N):
     x_dashed = np.zeros((N,2))
@@ -253,15 +278,15 @@ def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N):
 if __name__=='__main__':
     l = -0.05
     c = 10
-    N = 100
+    N = 500
     delta_t = 1
     sigma_w = 0.05
-    sigma_mus = [0.15, 0.15]
-    mu0s = [0.05, -0.1]
-    alpha = 1.6
-    k_v = 500
+    sigma_mus = np.array([0.015, 0.015])
+    mu0s = [0.1, 0.05]
+    alpha = 0.9
+    k_v = 700
 
-    simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, save = True)
+    simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
     # plt.figure()
     # plt.subplot(2,1,1)
     # plt.plot(x_ns[:,0])

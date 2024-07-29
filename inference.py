@@ -130,7 +130,7 @@ def particle_filter_2d(y_ns, P, c, T, sigma_mus, sigma_w, noise_sig, alpha,l, de
         m = n+1
         y_n = y_ns[m]
         
-        if True: # n%2 == 0: # resample
+        if n%2 == 0: # resample
             try:
                 n_log_ws[n], n_mus[n], n_vars[n], E_ns[n] = resample(n_log_ws[n], n_mus[n], n_vars[n], E_ns[n])
             except:
@@ -260,7 +260,7 @@ def inference_filtering2d(num_particles = 200, datapath = 'experiments/data/2d/x
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_2d(y_ns, num_particles, c, delta_t, sigma_mus, sigma_w, k_v*sigma_w, alpha, l, delta_t)
     average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
-    np.savez('experiments/data/2d/filter_res.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    np.savez(f'experiments/data/2d/filter_res_{int(alpha*10)}.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
 
     return average, std3, x_dashed, xs, fxs
 
@@ -316,6 +316,6 @@ def plot_result_from_stored(datapath = 'experiments/data/2d/x_ns.npz', resultpat
     
     
 if __name__=='__main__':
-    inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns.npz') 
+    inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns9.npz') 
     plot_result_from_stored()
     
