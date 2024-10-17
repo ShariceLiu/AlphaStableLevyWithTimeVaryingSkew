@@ -254,8 +254,9 @@ def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = No
             k_v = k_v, allow_pickle=True)
     # plt.show()
 
-def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N):
+def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N, drift=0):
     x_dashed = np.zeros((N,2))
+
     x_dashed[0,-1] = mu0
     integrals = np.zeros(N)
     
@@ -273,6 +274,8 @@ def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N):
             + np.random.normal(0, S_st)
         x_dashed[n+1,-1] = mus[-1]
 
+    x_dashed[:,0] += np.linspace(0,(N-1)*drift,num=N)
+
     return x_dashed
     
 if __name__=='__main__':
@@ -283,19 +286,20 @@ if __name__=='__main__':
     sigma_w = 0.05
     sigma_mus = np.array([0.015, 0.015])
     mu0s = [0.1, 0.05]
-    alpha = 0.9
-    k_v = 700
+    alpha = 1.2
+    k_v = 1e3 # 1.5e4 for alpha=0.9
 
-    simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
-    # plt.figure()
-    # plt.subplot(2,1,1)
-    # plt.plot(x_ns[:,0])
-    # plt.ylabel('displacement')
-    # plt.subplot(2,1,2)
-    # plt.plot(x_ns[:,1])
-    # plt.ylabel('Mu')
-    # plt.xlabel('Time (n)')
-    # plt.show()
+    # simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
+    x_ns = simu_pure_noise(mu0s[0]*0, c, delta_t, 1e-4, alpha, sigma_w, N, drift=-0.1)
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.plot(x_ns[:,0])
+    plt.ylabel('displacement')
+    plt.subplot(2,1,2)
+    plt.plot(x_ns[:,1])
+    plt.ylabel('Mu')
+    plt.xlabel('Time (n)')
+    plt.show()
     
     # data_read = np.load('experiments/data/x_ns.npz')
     # x_dashed = data_read['x']
