@@ -5,6 +5,7 @@ import scipy
 # from simulation import forward_simulation_1d_w_integrals
 from scipy.stats import invgamma
 from tqdm import tqdm
+from real_data import extract_track
 
 def resample(log_weight_p, mu_p, var_p, E_ns):
     """resample particles, input/output arrays"""
@@ -314,8 +315,45 @@ def plot_result_from_stored(datapath = 'experiments/data/2d/x_ns.npz', resultpat
     plt.savefig(f'experiments/figure/2d/filter/sigma_{int(alpha*10)}.png')
     # plt.show()
     
+
+def inf_1d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\fish\3DZeF20Lables\train\ZebraFish-01\gt\gt.txt'):
+    y_ns = extract_track(datapath)[0,:500,0]
+    num_particles = 100
+
+    l = -0.05
+    c = 10
+    N = 500
+    delta_t = 1
+    sigma_w = 0.05
+    sigma_mu = 0.015
+    mu0s = [0.1, 0.05]
+    alpha = 1.2
+    k_v = 1e3 # 1.5e4 for alpha=0.9
+
+    n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
+    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\fish1d",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.ylabel('displacement')
+    pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]
+    plt.plot(pred_xs[:,0])
+    plt.plot(y_ns)
+    plt.ylim([18,28])
+    plt.legend(['pred','noisy'])
+    plt.subplot(2,1,2)
+    plt.ylabel('velocity')
+    plt.plot(pred_xs[:,1])
+    plt.ylim([-1,1])
+    plt.savefig(f'experiments/figure/real_data/xs_{int(alpha*10)}.png')
     
 if __name__=='__main__':
-    inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns9.npz') 
-    plot_result_from_stored()
+    # inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns9.npz') 
+    # plot_result_from_stored()
+
+    inf_1d_fish()
+
+    
+    
     

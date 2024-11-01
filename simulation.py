@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tools import *
 
+
 def forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, vses=None, gammases=None, returnCA = False):
     """forward simulation of 1d langevin model driven by alpha stable noise, time changing skew
 
@@ -300,6 +301,8 @@ if __name__=='__main__':
     plt.ylabel('Mu')
     plt.xlabel('Time (n)')
     plt.show()
+
+    
     
     # data_read = np.load('experiments/data/x_ns.npz')
     # x_dashed = data_read['x']

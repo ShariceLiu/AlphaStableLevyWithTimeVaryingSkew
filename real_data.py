@@ -33,7 +33,6 @@ def plot3d(data, save=False):
         plt.savefig(save)
 
 
-
 if __name__=='__main__':
     l = -0.05
     c = 10
