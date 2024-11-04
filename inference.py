@@ -317,18 +317,19 @@ def plot_result_from_stored(datapath = 'experiments/data/2d/x_ns.npz', resultpat
     
 
 def inf_1d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\fish\3DZeF20Lables\train\ZebraFish-01\gt\gt.txt'):
-    y_ns = extract_track(datapath)[0,:500,0]
-    num_particles = 100
-
     l = -0.05
     c = 10
     N = 500
     delta_t = 1
-    sigma_w = 0.05
-    sigma_mu = 0.015
-    mu0s = [0.1, 0.05]
-    alpha = 1.2
-    k_v = 1e3 # 1.5e4 for alpha=0.9
+    sigma_w = 0.1
+    sigma_mu = 1e-3
+    alpha = 1.5
+    k_v = 10 # 1.5e4 for alpha=0.9
+
+    x_ns = extract_track(datapath)[0,:N,0]
+    # add noise
+    y_ns = x_ns + +np.random.normal(0, sigma_w*k_v, N)
+    num_particles = 200
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
     average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
@@ -339,13 +340,14 @@ def inf_1d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\
     plt.ylabel('displacement')
     pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]
     plt.plot(pred_xs[:,0])
-    plt.plot(y_ns)
+    plt.plot(x_ns, linestyle = '--', color = 'red')
+    plt.scatter(range(N),y_ns,color='orange',s=5)
     plt.ylim([18,28])
-    plt.legend(['pred','noisy'])
+    plt.legend(['pred','true','noisy'])
     plt.subplot(2,1,2)
-    plt.ylabel('velocity')
-    plt.plot(pred_xs[:,1])
-    plt.ylim([-1,1])
+    plt.ylabel('mu')
+    plt.plot(pred_xs[:,-1])
+    plt.ylim([min(pred_xs[25:,-1]),max(pred_xs[25:,-1])])
     plt.savefig(f'experiments/figure/real_data/xs_{int(alpha*10)}.png')
     
 if __name__=='__main__':
