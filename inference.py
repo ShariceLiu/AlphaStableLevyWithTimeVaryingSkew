@@ -317,13 +317,13 @@ def plot_result_from_stored(datapath = 'experiments/data/2d/x_ns.npz', resultpat
     
 
 def inf_1d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\fish\3DZeF20Lables\train\ZebraFish-01\gt\gt.txt'):
-    l = -0.05
+    l = -50
     c = 10
     N = 500
     delta_t = 1
     sigma_w = 0.1
     sigma_mu = 1e-3
-    alpha = 1.5
+    alpha = 1.9
     k_v = 10 # 1.5e4 for alpha=0.9
 
     x_ns = extract_track(datapath)[0,:N,0]
@@ -342,13 +342,13 @@ def inf_1d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\
     plt.plot(pred_xs[:,0])
     plt.plot(x_ns, linestyle = '--', color = 'red')
     plt.scatter(range(N),y_ns,color='orange',s=5)
-    plt.ylim([18,28])
+    plt.ylim([min(y_ns[25:]),max(y_ns[25:])])
     plt.legend(['pred','true','noisy'])
     plt.subplot(2,1,2)
     plt.ylabel('mu')
     plt.plot(pred_xs[:,-1])
-    plt.ylim([min(pred_xs[25:,-1]),max(pred_xs[25:,-1])])
-    plt.savefig(f'experiments/figure/real_data/xs_{int(alpha*10)}.png')
+    plt.ylim([-np.mean(np.abs(pred_xs[25:,-1]))*3,np.mean(np.abs(pred_xs[25:,-1]))*3])
+    plt.savefig(f'experiments/figure/real_data/xs_{int(alpha*10)}_l{int(abs(l))}.png')
     
 if __name__=='__main__':
     # inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns9.npz') 
