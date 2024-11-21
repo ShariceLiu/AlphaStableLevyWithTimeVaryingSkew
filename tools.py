@@ -160,7 +160,7 @@ class alphaStableJumpsProcesser():
         int_mus = sum(mus*delta_vs)
         return int_mus
         
-def generate_jumps(c, T, sigma_mu = -1):
+def generate_jumps(c, T=1.0, delta=1.0, sigma_mu = -1):
     """
     generate gammas and vs, 
     if sigma_mu not equal to None, return with mus, mus are 1 length longer, including the mu at time T
@@ -168,10 +168,10 @@ def generate_jumps(c, T, sigma_mu = -1):
     gamma = 0
     vs = []
     gammas = []
-    while gamma<c*T:
-        delta_gamma = np.random.exponential(scale = 1.0)
+    while gamma<c:
+        delta_gamma = np.random.exponential(scale = T/delta)
         gamma = gamma+delta_gamma
-        v_i = np.random.uniform(0,T)
+        v_i = np.random.uniform(0,delta)
         vs.append(v_i)
         gammas.append(gamma)
         

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.io as sio
 
 
 def extract_track(filepath):
@@ -24,7 +25,27 @@ def extract_track(filepath):
 
     return track_data
 
-def plot3d(data, save=False):
+def extract_mat_data(filename = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\dataEurUS.mat"):
+    mat_contents = sio.loadmat(filename)['last_traded']
+    ts = mat_contents['t_l'][0,0].flatten()
+    xs = mat_contents['z_l'][0,0].flatten()
+
+    ts -= ts[0]
+
+    t0= 0.0
+    xs_non_rep = [xs[0]]
+    ts_non_rep = [ts[0]]
+    for x, t in zip(xs[1:], ts[1:]):
+        if t==t0: # repetitive time
+            continue
+        xs_non_rep.append(x)
+        ts_non_rep.append(t)
+
+        t0 = t
+
+    return np.array(xs_non_rep), np.array(ts_non_rep)
+
+def plot3d(track_data, save=False):
     # plot track data
     ax = plt.figure().add_subplot(projection='3d')
     ax.plot(track_data[0,:,0], track_data[0,:,1], track_data[0,:,2])
@@ -32,17 +53,7 @@ def plot3d(data, save=False):
     if save:
         plt.savefig(save)
 
-
-if __name__=='__main__':
-    l = -0.05
-    c = 10
-    delta_t = 1
-    sigma_w = 0.05
-    sigma_mus = np.array([0.015, 0.015])
-    mu0s = [0.1, 0.05]
-    alpha = 1.2
-    k_v = 1
-
+def plot_fish_data():
     file_path=r'C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\fish\3DZeF20Lables\train\ZebraFish-01\gt\gt.txt'
 
     track_data = extract_track(file_path)
@@ -67,5 +78,20 @@ if __name__=='__main__':
     plt.ylabel('velocity')
     plt.xlabel('Time (n)')
     plt.savefig(r'experiments\data\real_data\fish2_x')
+
+if __name__=='__main__':
+    l = -0.05
+    c = 10
+    delta_t = 1
+    sigma_w = 0.05
+    sigma_mus = np.array([0.015, 0.015])
+    mu0s = [0.1, 0.05]
+    alpha = 1.2
+    k_v = 1
+
+    xs, ts = extract_mat_data()
+    plt.plot(ts, xs)
+    plt.xlabel('Time')
+    plt.savefig(r'experiments\data\finance\true')
 
     
