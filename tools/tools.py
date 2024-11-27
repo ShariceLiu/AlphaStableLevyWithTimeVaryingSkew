@@ -227,3 +227,4 @@ def noise_variance_C(S_mu, S_st, hi_fi_intQ, hi_fi_vi, delta_t, l, sigma_mu, wit
         C[:2,-1] = hi_fi_vi
         C[-1,:2] = hi_fi_vi
     return C
+

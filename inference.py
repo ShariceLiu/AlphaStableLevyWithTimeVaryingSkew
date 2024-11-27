@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tools import *
+from tools.tools import *
 import scipy
 # from simulation import forward_simulation_1d_w_integrals
 from scipy.stats import invgamma
