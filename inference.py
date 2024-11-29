@@ -213,7 +213,7 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.0
         d_a = 2
 
     for i in range(N):
-        alpha_n = alpha_w + i/d_a
+        alpha_n = alpha_w + i*d_a/2
         for d in range(D):
             average[i,d]=np.dot(n_mus[i,:,d], np.exp(n_log_ws[i,:]))
             for j in range(D):
@@ -229,7 +229,7 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.0
         tot_mean_sigma[i]=np.dot(mean_sigmas[i,:], np.exp(n_log_ws[i,:]))
         tot_var_sigma[i] = np.dot(var_sigmas[i,:], np.exp(n_log_ws[i,:])) + np.dot((mean_sigmas[i,:]-tot_mean_sigma[i])*(mean_sigmas[i,:]-tot_mean_sigma[i]),np.exp(n_log_ws[i,:]))
     
-    alpha = alpha_w + N/d_a
+    alpha = alpha_w + N*d_a/2
     xs = np.linspace(sigma_w**2*0.8,sigma_w**2*1.3,100)
     fxs = 0
     for p in range(num_particles):
