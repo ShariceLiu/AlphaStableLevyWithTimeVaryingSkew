@@ -423,7 +423,7 @@ def inf_finance(num_particles = 200):
 def inf_2d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\fish\3DZeF20Lables\train\ZebraFish-01\gt\gt.txt'):
     l = -1e-2
     c = 5
-    N = 500
+    N = 1000
     startx = 3000
     delta_t = 1
     sigma_w = 0.05
@@ -438,7 +438,7 @@ def inf_2d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\
     average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
     np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\fish2d",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
 
-    m = 100
+    m = 200
     pred_xs = average[m:,:]
     y_ns = y_ns[m:,:]
     N = N - m
@@ -457,7 +457,7 @@ def inf_2d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\
     line1 = ax.plot(pred_xs[0,0], pred_xs[0,3], label='Pred')[0]
     line2 = ax.plot(y_ns[0,0], y_ns[0,1], linestyle = '--', color = 'red', label='Noisy')[0]
     scale = 5
-    vecfield = ax.quiver(pred_xs[0,0], pred_xs[0,3], pred_xs[0,2]*scale, pred_xs[0,-1]*scale, scale = 1, label='Mu')
+    vecfield = ax.quiver(pred_xs[0,0], pred_xs[0,3], pred_xs[0,2]*scale, pred_xs[0,-1]*scale, label='Mu')
     ax.set(xlim=[min(pred_xs[:,0]) - 2.5, max(pred_xs[:,0]) + 2.5], \
            ylim=[min(pred_xs[:,3]) - 2.5, max(pred_xs[:,3]) + 2.5])
 
