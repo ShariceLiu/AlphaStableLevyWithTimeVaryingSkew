@@ -581,6 +581,6 @@ if __name__=='__main__':
     # plot_result_from_stored()
 
     # inf_finance()
-    inf_1d_fish(num_particles =1000, N=1200)
+    inf_1d_fish(num_particles = 1000, N=1200)
     # inf_2d_fish(num_particles=100 , N=1200, m=400)
     # inf_3d_fish(num_particles =1000, N=1200,m=200,scale=5e4)
