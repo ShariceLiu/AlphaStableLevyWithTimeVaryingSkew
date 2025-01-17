@@ -1,0 +1,20 @@
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=0.001, alpha = 1.6, kv=50000.0 
+log marginals:-36.709902228644744
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=0.001, alpha = 0.9, kv=50000.0 
+log marginals:294.295489714146
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=0.001, alpha = 0.9, kv=10000.0 
+log marginals:360.3939462140387
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=0.001, alpha = 1.6, kv=10000.0 
+log marginals:184.44161333116838
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=1e-06, alpha = 1.6, kv=10000.0 
+log marginals:196.38614100729774
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=1e-06, alpha = 0.9, kv=50000.0 
+log marginals:302.7964626913261
+l=-0.001, c=5, N=500, T=1, sigma w =0.05, sigma mu=1e-06, alpha = 0.9, kv=50000.0 
+log marginals:290.5451295156816
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=1e-06, alpha = 0.9, kv=10000.0 
+log marginals:353.4029061587037
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=1e-06, alpha = 0.9, kv=10000.0 
+log marginals:358.1167373936592
+l=-0.01, c=5, N=500, T=1, sigma w =0.05, sigma mu=0.01, alpha = 0.9, kv=10000.0 
+log marginals:365.53081613561756

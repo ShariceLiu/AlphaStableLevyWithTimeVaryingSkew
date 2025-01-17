@@ -55,6 +55,10 @@ def int_ft(l, delta_t):
 def int_ft_t(l, dt, dv):
     """
     return \int_s^v f_t(u)(u-s)du
+
+    Args:
+        dt = t-s
+        dv = v-s
     """
     term2 = int_t_exp_lambda_dt(l,dt, dv)
     term1 = (term2 - 0.5*dv**2)/l
@@ -69,14 +73,16 @@ def int_fft(l, delta_t):
     term11 = (term22 - 2*int_exp_lambda_dt(l, delta_t, 0.0)+ delta_t)/l**2
     return np.array([[term11, term12],[term12, term22]])
 
-def int_fft_u_s(l, delta_t):
+def int_fft_u_s(l, delta_t): # TODO: recalculate this
     """
     return \int_s^t \int_u^t f_t(u) f_t(v)^T (u-s)dudv + its transpose
     """
-    term4 = (int_t_exp_lambda_dt(2*l,delta_t, 0.0)- int_t_exp_lambda_dt(l, delta_t, 0.0))/l
+    
+    term4 = (int_t_exp_lambda_dt(2*l,delta_t, delta_t)- int_t_exp_lambda_dt(l, delta_t, delta_t))/l
     term3 = term4/l - int_t2_exp_lam_t(l,delta_t)/l
-    term2 = (int_t_exp_lambda_dt(2*l,delta_t, 0.0)- 2*int_t_exp_lambda_dt(l, delta_t, 0.0)+0.5* delta_t**2)/l**2
-    term1 = term2/l + (delta_t**3/6 - int_t2_exp_lam_t(l, delta_t))/l**2
+    term2 = (int_t_exp_lambda_dt(2*l,delta_t, delta_t)- 2*int_t_exp_lambda_dt(l, delta_t, delta_t)+0.5* delta_t**2)/l**2
+    # term1 = term2/l + (delta_t**3/6 - int_t2_exp_lam_t(l, delta_t))/l**2
+    term1 = (int_t_exp_lambda_dt(2*l,delta_t, delta_t) - 2*int_t_exp_lambda_dt(l, delta_t, delta_t) - l*int_t2_exp_lam_t(l, delta_t) + delta_t**2/2+l*delta_t**3/6)/l**3
     return np.array([[term1*2, term2+term3],[term2+term3, term4]])
 
 def M_Z_2(e, alpha):
@@ -110,7 +116,7 @@ class alphaStableJumpsProcesser():
 
         N = len(gammas)
         fVs = np.zeros((N, 2)) # f_t(V_i), row vectors
-        hGammas = gammas**(-1/alpha) # jump size from h(gamma)
+        hGammas = delta_t**(1/alpha) *gammas**(-1/alpha) # jump size from h(gamma)
         if l:
             for i in range(N):
                 fVs[i,:] = eAt(l, (delta_t - vs[i]))@np.array([0,1])
@@ -177,7 +183,7 @@ class alphaStableJumpsProcesser():
                     +self.hi_fi_int_f(sigma_mu)
     
     def S_zm_B(self, sigma_mu):
-        return self.hi_fi_vi(sigma_mu) + sigma_mu**2 * int_ft_t(self.l, self.delta_t, 0.0)
+        return self.hi_fi_vi(sigma_mu) + sigma_mu**2 * int_ft_t(self.l, self.delta_t, self.delta_t)
     
     def A_12(self):
         """return sum hi f(V_i)"""

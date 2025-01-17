@@ -122,7 +122,7 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
     gammases = []
     
     for n in range(N-1):
-        vs, gammas, mus = generate_jumps(c, delta_t, sigma_mu)
+        vs, gammas, mus = generate_jumps(c, delta_t, delta_t, sigma_mu)
         mus += x_dashed[n, -1] # mus are from 0, need to add the initial value
         vses.append(vs)
         gammases.append(gammas)
@@ -142,9 +142,10 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
         return x_dashed
 
 def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
-    # x_dashed_noint, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
-    x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0)
-    y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]
+    x_dashed, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
+    y_ns = x_dashed[:,:2]
+    # x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0)
+    # y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]
 
     plt.figure()
     plt.subplot(2,1,1)
@@ -153,7 +154,6 @@ def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
     plt.subplot(2,1,2)
     plt.plot(y_ns[:,1])
     plt.ylabel('velocity')
-    plt.show()
     if save:
         plt.savefig(f'experiments/figure/simulation/xs_a{int(alpha*10)}.png')
 
@@ -165,18 +165,18 @@ def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
     plt.plot(x_dashed[:,-1])
     plt.ylabel('$\mu')
     plt.xlabel('Time (n)')
-    plt.show()
+    if save:
+        plt.savefig(f'experiments/figure/simulation/mus_a{int(alpha*10)}.png')
     
     y_ns_noisy = y_ns+np.random.normal(0, sigma_w*k_v, (N, 2))
     plt.figure()
     plt.plot(y_ns[:,0])
     plt.scatter(range(N), y_ns_noisy[:,0], color='orange',s=5)
     plt.legend(['True state', 'Noisy observation'])
-    plt.show()
     if save:
         plt.savefig(f'experiments/figure/simulation/ys_a{int(alpha*10)}.png')
         # save
-        np.savez('experiments/data/x_ns.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mu, delta_t = delta_t, \
+        np.savez('C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mu, delta_t = delta_t, \
             k_v = k_v, allow_pickle=True)
 
 def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = None):
@@ -284,23 +284,25 @@ if __name__=='__main__':
     c = 10
     N = 500
     delta_t = 1
-    sigma_w = 0.05
-    sigma_mus = np.array([0.015, 0.015])
+    sigma_w = 0.01
+    sigma_mus = np.array([0.015, 0.015])*1e-4
     mu0s = [0.1, 0.05]
-    alpha = 1.2
-    k_v = 1e3 # 1.5e4 for alpha=0.9
+    alpha = 0.9
+    k_v = 5e3 # 1.5e4 for alpha=0.9
+
+    simu(l, c, N, delta_t, sigma_w, sigma_mus[0], mu0s[0], alpha, k_v, save=True)
 
     # simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
-    x_ns = simu_pure_noise(mu0s[0]*0, c, delta_t, 1e-4, alpha, sigma_w, N, drift=-0.1)
-    plt.figure()
-    plt.subplot(2,1,1)
-    plt.plot(x_ns[:,0])
-    plt.ylabel('displacement')
-    plt.subplot(2,1,2)
-    plt.plot(x_ns[:,1])
-    plt.ylabel('Mu')
-    plt.xlabel('Time (n)')
-    plt.show()
+    # x_ns = simu_pure_noise(mu0s[0]*0, c, delta_t, 1e-4, alpha, sigma_w, N, drift=-0.1)
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.plot(x_ns[:,0])
+    # plt.ylabel('displacement')
+    # plt.subplot(2,1,2)
+    # plt.plot(x_ns[:,1])
+    # plt.ylabel('Mu')
+    # plt.xlabel('Time (n)')
+    # plt.show()
 
     
     

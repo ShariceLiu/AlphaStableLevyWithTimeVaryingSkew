@@ -245,7 +245,7 @@ def inference_filtering(num_particles = 100, datapath = 'experiments/data/x_ns.n
     y_ns = data_read['y'][:,0] # observation, size (N, 1)
     l = data_read['l']
     c = data_read['c']
-    delta_t = data_read['delta_t']
+    delta_t = data_read['delta_t'].item()
     sigma_w = data_read['sigma_w']
     sigma_mu = data_read['sigma_mu']
     alpha = data_read['alpha']
@@ -253,7 +253,7 @@ def inference_filtering(num_particles = 100, datapath = 'experiments/data/x_ns.n
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
     average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
-    np.savez('experiments/data/filter_res.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    np.savez('C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
 
     return average, std3, x_dashed, xs, fxs
 
@@ -291,26 +291,28 @@ def plot_result_from_stored(datapath = 'experiments/data/2d/x_ns.npz', resultpat
     plt.ylabel('displacement')
     pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]
     plt.plot(pred_xs[:,0])
-    plt.plot(x_dashed[:,0]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2])
+    # plt.plot(x_dashed[:,0]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2])
+    plt.plot(x_dashed[:,0])
     plt.legend(['pred','true'])
     plt.subplot(2,1,2)
     plt.ylabel('velocity')
     plt.plot(pred_xs[:,1])
-    plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3])
+    # plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3])
+    plt.plot(x_dashed[:,1])
     plt.savefig(f'experiments/figure/2d/filter/xs_{int(alpha*10)}.png')
     
     plt.figure()
     plt.subplot(2,1,1)
     plt.ylabel('integral of mu')
-    plt.plot(average[:,2])
-    plt.plot(x_dashed[:,2])
+    # plt.plot(average[:,2])
+    # plt.plot(x_dashed[:,2])
     plt.legend(['pred','true'])
-    plt.ylim([min(average[25:,2] - std3[25:,2]),max(average[25:,2] + std3[25:,2])])
+    plt.ylim([min(average[100:,2] - std3[100:,2]),max(average[100:,2] + std3[100:,2])])
     plt.fill_between(range(len(average)), average[:,2] - std3[:,2], average[:,2] + std3[:,2],
                  color='gray', alpha=0.2)
     plt.subplot(2,1,2)
     plt.ylabel('mu')
-    plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
+    plt.ylim([min(average[100:,-1] - std3[100:,-1]),max(average[100:,-1] + std3[100:,-1])])
     plt.fill_between(range(len(average)), average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
                  color='gray', alpha=0.2)
     plt.plot(average[:,-1])
@@ -333,13 +335,13 @@ def inf_1d_fish(num_particles = 100, datapath=r'C:\Users\95414\Desktop\CUED\phd\
     startx = 3000
     delta_t = 0.05
     sigma_w = 0.1
-    sigma_mu = 1e-3
+    sigma_mu = 1e-6
     alpha = 1.6
     k_v = 10 # 1.5e4 for alpha=0.9
 
     x_ns = extract_track(datapath)[0,startx:(startx+N),0]
-    # add noise
-    y_ns = x_ns + +np.random.normal(0, sigma_w*k_v, N)
+    # add noise 
+    y_ns = x_ns #+np.random.normal(0, sigma_w*k_v, N)
     num_particles = 200
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
@@ -365,21 +367,21 @@ def inf_finance(num_particles = 200):
     datapath = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\dataEurUS.mat"
 
     l = -1e-2
-    c = 10
+    c = 5
     N = 500
     T = 1
-    sigma_w = 0.1
-    sigma_mu = 1e-3
-    alpha = 1.9
-    k_v = 20
+    sigma_w = 0.05
+    sigma_mu = 2e-3
+    alpha = 1.6
+    k_v = 1000
 
     x_ns, t_ns = extract_mat_data(datapath)
-    x_ns = x_ns[:N]*1e4 - x_ns[0]*1e4
-    t_ns = t_ns[:N]*1e4
+    x_ns = x_ns[:N]*5e4 - x_ns[0]*5e4
+    t_ns = t_ns[:N]*5e4
     delta_ts = t_ns[1:] - t_ns[:-1]
 
     # add noise
-    y_ns = x_ns +np.random.normal(0, sigma_w*k_v, N)
+    y_ns = x_ns # +np.random.normal(0, sigma_w*k_v, N)
     # plt.plot(t_ns, x_ns)
     # plt.scatter(t_ns, y_ns,color='orange',s=5)
     # plt.savefig(r'experiments\figure\real_data\finance\noisy')
@@ -405,11 +407,11 @@ def inf_finance(num_particles = 200):
     plt.savefig(f'experiments/figure/real_data/finance/xs_{int(alpha*10)}_l{int(abs(l))}.png')
     
 if __name__=='__main__':
-    # inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns9.npz') 
-    # plot_result_from_stored()
+    # inference_filtering(num_particles = 200, datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz') 
+    # plot_result_from_stored(datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz', resultpath='C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz')
 
-    # inf_finance()
-    inf_1d_fish()
+    inf_finance()
+    # inf_1d_fish()
 
     
     

@@ -76,6 +76,8 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
     # some useful constants
     observation_matrix = np.array([1,0,0])
 
+    log_marg = 0.0
+
     # time
     if isinstance(delta_t, float) or isinstance(delta_t, int):
         delta_ts = np.ones([N-1])*delta_t
@@ -95,6 +97,7 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
             vs, gammas = generate_jumps(c, T, delta_t_n)
             processer = alphaStableJumpsProcesser(gammas, vs, alpha, delta_t_n, c, T, l)
             
+            
             # transition matrices
             C = noise_variance_C(processer, sigma_w, sigma_mu)
             A = transition_matrix(processer)
@@ -112,11 +115,12 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
             n_log_ws[m,p] = n_log_ws[n, p]+ log_like
 
         # normalise weights
+        log_marg += np.log(sum(np.exp(n_log_ws[m,:])))
         n_log_ws[m,:] = n_log_ws[m,:]- np.log(sum(np.exp(n_log_ws[m,:])))
 
     n_vars /= sigma_w**2 # if marginalizing sigma
 
-    return n_mus, n_vars, n_log_ws, E_ns
+    return n_mus, n_vars, n_log_ws, E_ns, log_marg
 
 def particle_filter_2d(y_ns, P, c, T, sigma_mus, sigma_w, noise_sig, alpha,l, delta_t, trans_As = None, noise_Cs=None, alpha_w = 0.000000000001,beta_w = 0.000000000001):
     """P: number of particles"""
@@ -318,21 +322,25 @@ def inf_1d_fish(num_particles = 200, N=1000, datapath=r'C:\Users\95414\Desktop\C
     l = -1e-2 #1e-2
     c = 5
     startx = 3000
-    delta_t = 1
-    sigma_w = 0.05
+    delta_t = 0.05
+    sigma_w = 0.1
     sigma_mu0 = 0.0
-    sigma_mu = 1e-4 #1e-3
+    sigma_mu = 0.1 #1e-3
     alpha = 0.9
-    k_v = 1e3 # 500 for x
+    k_v = 100 # 500 for x
+    dim =0
 
-    x_ns = extract_track(datapath)[0,startx:(startx+N),2]
+    x_ns = extract_track(datapath)[0,startx:(startx+N),dim]
     # add noise
     y_ns = x_ns #+np.random.normal(0, sigma_w*k_v, N)
-    num_particles = 200
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t, sigma_mu0)
-    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
-    np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\fish1d_z",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    average, std3, _ ,_, _, marg = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    with open('experiments\figure\simplified\fish\1d_marginals.txt', 'w') as f:
+        line = f'dim={dim}, l={l}, c={c}, N={N}, T={delta_t}, sigma w ={sigma_w}, sigma mu={sigma_mu}, alpha = {alpha}, kv={k_v} \nmarginals:{marg}\n'
+        f.write(line)
+    np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\fish1d_x",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    
 
     plt.figure(figsize=(8,10))
     plt.subplot(3,1,1)
@@ -351,10 +359,10 @@ def inf_1d_fish(num_particles = 200, N=1000, datapath=r'C:\Users\95414\Desktop\C
     plt.subplot(3,1,2)
     plt.ylabel('velocity')
     plt.plot(pred_xs[:,1])
-    plt.plot(x_ns, linestyle = '--', color = 'red')
+    # plt.plot(x_ns, linestyle = '--', color = 'red')
 
-    # plt.ylim([min(average[200:,1] - std3[200:,1]),max(average[200:,1] + std3[200:,1])])
-    plt.ylim([-0.5,0.5])
+    plt.ylim([min(average[200:,1] - std3[200:,1]),max(average[200:,1] + std3[200:,1])])
+    # plt.ylim([-0.5,0.5])
     plt.fill_between(range(len(average)), average[:,1] - std3[:,1], average[:,1] + std3[:,1],
                  color='gray', alpha=0.2)
 
@@ -364,19 +372,19 @@ def inf_1d_fish(num_particles = 200, N=1000, datapath=r'C:\Users\95414\Desktop\C
     plt.ylim([min(average[200:,-1] - std3[200:,-1]),max(average[200:,-1] + std3[200:,-1])])
     plt.fill_between(range(len(average)), average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
                  color='gray', alpha=0.2)
-    plt.savefig(f'experiments/figure/simplified/fish/zs_{int(alpha*10)}_l{int(abs(l))}.png')
+    plt.savefig(f'experiments/figure/simplified/fish/xs_{int(alpha*10)}_l{int(abs(l))}.png')
 
 def inf_finance(num_particles = 200):
     datapath = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\dataEurUS.mat"
 
     l = -1e-2
-    c = 10
+    c = 5
     N = 500
     T = 1
     sigma_w = 0.05
-    sigma_mu = 2e-3
-    alpha = 1.6
-    k_v = 1000
+    sigma_mu = 1e-2
+    alpha = 0.9
+    k_v = 1e4
 
     x_ns, t_ns = extract_mat_data(datapath)
     x_ns = x_ns[:N]*5e4 - x_ns[0]*5e4
@@ -390,9 +398,12 @@ def inf_finance(num_particles = 200):
     # plt.savefig(r'experiments\figure\real_data\finance\noisy')
 
 
-    n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, T, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_ts)
-    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
-    # np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\finance",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    n_mus, n_vars, n_log_ws, E_ns, log_marg = particle_filter_1d(y_ns, num_particles, c, T, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_ts)
+    average, std3, _ ,_, _ = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    with open('experiments/figure/simplified/finance/marginals.txt', 'a') as f:
+        line = f'l={l}, c={c}, N={N}, T={T}, sigma w ={sigma_w}, sigma mu={sigma_mu}, alpha = {alpha}, kv={k_v} \nlog marginals:{log_marg}\n'
+        f.write(line)
+    # np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\finance",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, marg = marg, allow_pickle=True)
 
     plt.figure(figsize=(8,10))
     plt.subplot(3,1,1)
@@ -410,7 +421,8 @@ def inf_finance(num_particles = 200):
     plt.ylabel('velocity')
     plt.plot(t_ns, pred_xs[:,1])
     # plt.scatter(t_ns, y_ns,color='orange',s=5)
-    plt.ylim([min(average[25:,1] - std3[25:,1]),max(average[25:,1] + std3[25:,1])])
+    # plt.ylim([min(average[25:,1] - std3[25:,1]),max(average[25:,1] + std3[25:,1])])
+    plt.ylim([-3.0,3.0])
     plt.fill_between(t_ns, average[:,1] - std3[:,1], average[:,1] + std3[:,1],
                  color='gray', alpha=0.2)
     
@@ -429,17 +441,21 @@ def inf_2d_fish(num_particles = 100, N=1000, m=200, datapath=r'C:\Users\95414\De
     c = 5
     startx = 3000
     delta_t = 1
-    sigma_w = 0.05
+    sigma_w = 0.1
     sigma_mus = [1e-4, 1e-4]
-    alpha = 0.9
-    k_v = 1e3 # 1.5e4 for alpha=0.9
+    alpha = 1.6
+    k_v = 1e2 # 1.5e4 for alpha=0.9
 
     tracks = extract_track(datapath)
-    y_ns = tracks[0,startx:(startx+N),[0,2]].T
+    dims=[0,2]
+    y_ns = tracks[0,startx:(startx+N),dims].T
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_2d(y_ns, num_particles, c, delta_t, sigma_mus, sigma_w, k_v*sigma_w, alpha, l, delta_t)
-    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    average, std3, _ ,_, _, marg = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
     np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\fish2d",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    with open('experiments\figure\simplified\fish\marginals.txt', 'w') as f:
+        line = f'dim={dims}, l={l}, c={c}, N={N}, T={delta_t}, sigma w ={sigma_w}, sigma mu={sigma_mus}, alpha = {alpha}, kv={k_v}, \nmarginals:{marg}\n'
+        f.write(line)
 
     pred_xs = average[m:,:]
     y_ns = y_ns[m:,:]
@@ -514,18 +530,21 @@ def inf_3d_fish(num_particles = 100, N=500, m =100,scale = 1e3, datapath=r'C:\Us
     l = -1e-2
     c = 5
     startx = 3000
-    delta_t = 1
-    sigma_w = 0.05
-    sigma_mus = [1e-4, 1e-4, 1e-4]
-    alpha = 0.9
-    k_v = 1000 # 1.5e4 for alpha=0.9
+    delta_t = 0.05
+    sigma_w = 0.1
+    sigma_mus = [1e-1, 1e-1, 1e-1]
+    alpha = 1.6
+    k_v = 100 # 1.5e4 for alpha=0.9
 
     tracks = extract_track(datapath)
     y_ns = tracks[0,startx:(startx+N),:]
 
     n_mus, n_vars, n_log_ws, E_ns = particle_filter_3d(y_ns, num_particles, c, delta_t, sigma_mus, sigma_w, k_v*sigma_w, alpha, l, delta_t)
-    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    average, std3, _ ,_, _, marg = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
     np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\fish3d",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+    with open('experiments\figure\simplified\fish\marginals.txt', 'w') as f:
+        line = f'dim = 3d, l={l}, c={c}, N={N}, T={delta_t}, sigma w ={sigma_w}, sigma mu={sigma_mus}, alpha = {alpha}, kv={k_v} \nmarginals:{marg}\n'
+        f.write(line)
 
     pred_xs = average[m:,:]
     y_ns = y_ns[m:,:]
@@ -576,11 +595,81 @@ def inf_3d_fish(num_particles = 100, N=500, m =100,scale = 1e3, datapath=r'C:\Us
     # return
     ani.save(filename=f'C:/Users/95414/Desktop/CUED/phd/year1/mycode/alpha_stable_levy/stable_levy_code/data/real_data/video/3d_xs_{int(alpha*10)}_l{int(abs(l))}.gif', writer="pillow")
 
+def test_data(num_particles = 100, N=500, datapath='C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz'):
+    data_read = np.load(datapath)
+    x_dashed = data_read['x'] # true, uncentered, size (N, 5)
+    y_ns = data_read['y'][:,0] # observation, size (N, 1)
+    l = data_read['l']
+    c = data_read['c']
+    delta_t = data_read['delta_t'].item()
+    sigma_w = data_read['sigma_w']
+    sigma_mu = data_read['sigma_mu']
+    alpha = data_read['alpha']
+    k_v = data_read['k_v']
+
+    n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
+    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
+    np.savez('C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
+
+    return average, std3, x_dashed, xs, fxs
+
+def plot_result_from_stored(datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz', resultpath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz'):
+    res = np.load(resultpath)
+    
+    data_read = np.load(datapath)
+    x_dashed = data_read['x'] # true, uncentered, size (N, 5)
+    c = data_read['c']
+    sigma_w = data_read['sigma_w']
+    alpha = data_read['alpha']
+    
+    average, std3, _ ,xs, fxs = process_filter_results(res['n_mus'], res['n_vars'], res['n_log_ws'], res['E_ns'], sigma_w )
+    
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.ylabel('displacement')
+    pred_xs = average[:,:2] - alpha/(alpha-1) * c**(1-1/alpha)*average[:,2:4]
+    plt.plot(pred_xs[:,0])
+    # plt.plot(x_dashed[:,0]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2])
+    plt.plot(x_dashed[:,0])
+    plt.legend(['pred','true'])
+    plt.subplot(2,1,2)
+    plt.ylabel('velocity')
+    plt.plot(pred_xs[:,1])
+    # plt.plot(x_dashed[:,1]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,3])
+    plt.plot(x_dashed[:,1])
+    plt.savefig(f'experiments/figure/simplified/simu_data/filter/xs_{int(alpha*10)}.png')
+    
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.ylabel('integral of mu')
+    plt.plot(average[:,2])
+    plt.plot(x_dashed[:,2])
+    plt.legend(['pred','true'])
+    plt.ylim([min(average[25:,2] - std3[25:,2]),max(average[25:,2] + std3[25:,2])])
+    plt.fill_between(range(len(average)), average[:,2] - std3[:,2], average[:,2] + std3[:,2],
+                 color='gray', alpha=0.2)
+    plt.subplot(2,1,2)
+    plt.ylabel('mu')
+    plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
+    plt.fill_between(range(len(average)), average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
+                 color='gray', alpha=0.2)
+    plt.plot(average[:,-1])
+    plt.plot(x_dashed[:,-1])
+    plt.savefig(f'experiments/figure/simplified/simu_data/filter/mus_{int(alpha*10)}.png')
+    
+    plt.figure()
+    plt.plot(xs*1e3, fxs)
+    plt.axvline(x = sigma_w**2*1e3, color = 'g', label = '$\sigma_W^2$',linestyle='dashed',)
+    plt.xlabel(r'$\sigma_W^2 / 10^{-3}$')
+    plt.legend(['Posterior','True $\sigma_W^2$'])
+    plt.savefig(f'experiments/figure/simplified/simu_data/filter/sigma_{int(alpha*10)}.png')
+    # plt.show()
+
 if __name__=='__main__':
-    # inference_filtering2d(num_particles = 100, datapath = 'experiments/data/2d/x_ns9.npz') 
+    # test_data(num_particles=200)
     # plot_result_from_stored()
 
-    # inf_finance()
-    inf_1d_fish(num_particles = 1000, N=1200)
-    # inf_2d_fish(num_particles=100 , N=1200, m=400)
-    # inf_3d_fish(num_particles =1000, N=1200,m=200,scale=5e4)
+    inf_finance(num_particles=200)
+    # inf_1d_fish(num_particles = 200, N=1000)
+    # inf_2d_fish(num_particles=200 , N=1200, m=400)
+    # inf_3d_fish(num_particles =200, N=1200,m=200,scale=1)
