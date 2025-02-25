@@ -407,10 +407,10 @@ def inf_finance(num_particles = 200):
     plt.savefig(f'experiments/figure/real_data/finance/xs_{int(alpha*10)}_l{int(abs(l))}.png')
     
 if __name__=='__main__':
-    # inference_filtering(num_particles = 200, datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz') 
-    # plot_result_from_stored(datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz', resultpath='C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz')
+    inference_filtering(num_particles = 100, datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz') 
+    plot_result_from_stored(datapath = 'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/x_ns_test.npz', resultpath='C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz')
 
-    inf_finance()
+    # inf_finance()
     # inf_1d_fish()
 
     

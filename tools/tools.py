@@ -157,7 +157,9 @@ class alphaStableJumpsProcesser():
         all_vs[-1] = self.delta_t
         
         delta_vs = all_vs[1:] - all_vs[:N+1]
-        int_mus = sum(mus*delta_vs)
+        # import pdb;pdb.set_trace()
+        mudt = mus*delta_vs
+        int_mus = np.array([sum(mudt[:-1]* self.fVs[:,0]), sum(mudt[:-1]* self.fVs[:,1])]) # TODO: error here, missing f_t()
         return int_mus
         
 def generate_jumps(c, T=1.0, delta=1.0, sigma_mu = -1):

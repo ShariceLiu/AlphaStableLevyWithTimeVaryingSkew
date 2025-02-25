@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
-
+import pandas as pd
 
 def extract_track(filepath):
     with open(filepath,'r') as f:
@@ -45,6 +45,33 @@ def extract_mat_data(filename = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\d
 
     return np.array(xs_non_rep), np.array(ts_non_rep)
 
+def extract_csv(filename = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\NVIDIA CORPORATION (01-23-2025 09.30 _ 01-29-2025 16.00).csv"):
+    # extract from 1.27, every 5 min?
+    nvda_data_reloaded= pd.read_csv(filename, index_col=0, parse_dates=True)
+
+    plt.figure()
+    plt.plot(nvda_data_reloaded['Price'])
+    plt.xlabel('Minutes')
+    plt.ylabel('Price')
+    plt.savefig(r'experiments\figure\simplified\nvdia\price.png')
+
+    plt.figure()
+    plt.plot(nvda_data_reloaded['Price']['2025-01-27'])
+    plt.xlabel('Minutes')
+    plt.ylabel('Price')
+    plt.savefig(r'experiments\figure\simplified\nvdia\price01_27.png')
+    plt.figure()
+    plt.plot(nvda_data_reloaded['Price']['2025-01-28'])
+    plt.xlabel('Minutes')
+    plt.ylabel('Price')
+    plt.savefig(r'experiments\figure\simplified\nvdia\price01_28.png')
+    plt.figure()
+    plt.plot(nvda_data_reloaded['Price']['2025-01-29'])
+    plt.xlabel('Minutes')
+    plt.ylabel('Price')
+    plt.savefig(r'experiments\figure\simplified\nvdia\price01_29.png')
+    return
+
 def plot3d(track_data, save=False):
     # plot track data
     ax = plt.figure().add_subplot(projection='3d')
@@ -80,18 +107,6 @@ def plot_fish_data():
     plt.savefig(r'experiments\data\real_data\fish2_x')
 
 if __name__=='__main__':
-    l = -0.05
-    c = 10
-    delta_t = 1
-    sigma_w = 0.05
-    sigma_mus = np.array([0.015, 0.015])
-    mu0s = [0.1, 0.05]
-    alpha = 1.2
-    k_v = 1
-
-    xs, ts = extract_mat_data()
-    plt.plot(ts, xs)
-    plt.xlabel('Time')
-    plt.savefig(r'experiments\data\finance\true')
+    extract_csv()
 
     

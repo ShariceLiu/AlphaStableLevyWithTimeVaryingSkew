@@ -110,7 +110,7 @@ def forward_simulation_2d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu
     else:
         return x_dashed
 
-def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return_jumps=False):
+def forward_simulation_1d(alpha, l, c, N, T, delta_t, sigma_w, sigma_mu,mu0, return_jumps=False):
     """
     simulate directly by estimating integrals by Reimmann sums, 1d
     """
@@ -122,7 +122,7 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
     gammases = []
     
     for n in range(N-1):
-        vs, gammas, mus = generate_jumps(c, delta_t, delta_t, sigma_mu)
+        vs, gammas, mus = generate_jumps(c, T, delta_t, sigma_mu)
         mus += x_dashed[n, -1] # mus are from 0, need to add the initial value
         vses.append(vs)
         gammases.append(gammas)
@@ -141,11 +141,15 @@ def forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu,mu0, return
     else:
         return x_dashed
 
-def simu(l, c, N, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
-    x_dashed, vses, gammases = forward_simulation_1d(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
+def simu(l, c, N, T, delta_t, sigma_w, sigma_mu, mu0, alpha, k_v, save = False):
+    x_dashed, vses, gammases = forward_simulation_1d(alpha, l, c, N, T, delta_t, sigma_w, sigma_mu, mu0, return_jumps=True)
     y_ns = x_dashed[:,:2]
     # x_dashed = forward_simulation_1d_w_integrals(alpha, l, c, N, delta_t, sigma_w, sigma_mu, mu0)
     # y_ns = x_dashed[:,:2]- alpha/(alpha-1) * c**(1-1/alpha)*x_dashed[:,2:4]
+    vs= x_dashed[1:,1] - x_dashed[:-1, 1]
+    plt.figure()
+    plt.hist(vs, bins = 100)
+    plt.show()
 
     plt.figure()
     plt.subplot(2,1,1)
@@ -251,7 +255,7 @@ def simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = No
     if savepath:
         plt.savefig(f'experiments/figure/2d/simulation/ys_a{savepath}.png')
         # save
-        np.savez(f'experiments/data/2d/x_ns{savepath}.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0s, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mus, delta_t = delta_t, \
+        np.savez(f'C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/2d/x_ns_{savepath}.npz',x = x_dashed, y=y_ns_noisy, mu0 = mu0s, c = c, l = l, alpha = alpha, sigma_w = sigma_w, sigma_mu = sigma_mus, delta_t = delta_t, \
             k_v = k_v, allow_pickle=True)
     # plt.show()
 
@@ -280,17 +284,19 @@ def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N, drift=0):
     return x_dashed
     
 if __name__=='__main__':
-    l = -0.05
+    l = -0.1
     c = 10
     N = 500
+    T = 1
     delta_t = 1
     sigma_w = 0.01
-    sigma_mus = np.array([0.015, 0.015])*1e-4
+    sigma_mus = np.array([0.015, 0.015])
     mu0s = [0.1, 0.05]
-    alpha = 0.9
-    k_v = 5e3 # 1.5e4 for alpha=0.9
+    mu0 = 8
+    alpha = 1.4
+    k_v = 5e4 # 1.5e4 for alpha=0.9
 
-    simu(l, c, N, delta_t, sigma_w, sigma_mus[0], mu0s[0], alpha, k_v, save=True)
+    simu(l, c, N, T, delta_t, sigma_w, sigma_mus[0], mu0, alpha, k_v, save=True)
 
     # simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
     # x_ns = simu_pure_noise(mu0s[0]*0, c, delta_t, 1e-4, alpha, sigma_w, N, drift=-0.1)

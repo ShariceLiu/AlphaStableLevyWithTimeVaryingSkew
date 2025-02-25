@@ -99,7 +99,8 @@ def C_z(e, T, alpha):
     """
     return T^{-1} \int_0^e zQ_Z(dz)
     """
-    return alpha/(1-alpha)*e**(1-alpha)/T
+    # return alpha/(1-alpha) * c**(1-1/alpha)
+    return alpha/(1-alpha)*e**(1-1/alpha)/T
 
 
 class alphaStableJumpsProcesser():
@@ -112,6 +113,7 @@ class alphaStableJumpsProcesser():
         self.alpha = alpha
         self.delta_t = delta_t
         self.epsilon = delta_t*c/T
+        self.c = c
         self.T=T
 
         N = len(gammas)
@@ -235,11 +237,26 @@ def generate_jumps(c, T=1.0, delta=1.0, sigma_mu = -1):
             u1 = mus[i]
             v0 = v_i
         # generate last u
-        dt_i = T-v0
+        dt_i = delta-v0
         mus[-1] = np.random.normal(u1, sigma_mu*np.sqrt(dt_i))
         return np.array(vs), np.array(gammas), mus
     else:
         return np.array(vs), np.array(gammas)
+    
+def generate_mus(vs, sigma_mu, delta):
+    v0 = 0
+    u1 = 0
+    mus = np.zeros(len(vs)+1)
+    for i, v_i in enumerate(vs):
+        dt_i = v_i - v0
+        # generate u, as a brownian motion
+        mus[i] = np.random.normal(u1, sigma_mu*np.sqrt(dt_i))
+        u1 = mus[i]
+        v0 = v_i
+    # generate last u
+    dt_i = delta-v0
+    mus[-1] = np.random.normal(u1, sigma_mu*np.sqrt(dt_i))
+    return mus
     
 
 def transition_matrix(processor:alphaStableJumpsProcesser):

@@ -1,0 +1,187 @@
+l=-0.1, c=10, N=391, dt=1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:208.28345328297286
+l=-0.1, c=10, N=391, dt=1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:-509.2251948488118
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:162.8770743112153
+l=-0.1, c=10, N=391, dt=0.5, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:278.9595005850864
+l=-0.1, c=10, N=391, dt=0.05, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:115.0437069115671
+l=-0.1, c=10, N=391, dt=0.2, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:239.1714308083144
+
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:163.43111516734206
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=10 
+log marginals:85.87389881288509
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=0.1 
+log marginals:261.8445335068296
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=0.1 
+log marginals:261.96525591063164
+
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:153.11234252497565
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=0.001, alpha = 0.8, kv=1 
+log marginals:168.69971225698453
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:175.0648066581589
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=0.3, alpha = 0.8, kv=1 
+log marginals:181.64312099265973
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=1, alpha = 0.8, kv=1 
+log marginals:188.60139838354513
+
+
+
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:166.2688631315267
+l=-0.1, c=10, N=391, dt=0.1, sigma w =1, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:170.0793456328829
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.1, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:163.72675690372347
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.5, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:167.68690634244305
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.2, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:163.48575517442865
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.35, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:170.85120056505357
+
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:167.32623116730218
+
+l=-1, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:164.90114760115858
+l=-1, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:165.39976151507443
+l=-0.1, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:156.61815148523644
+l=-0.01, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:159.02311141699772
+l=-0.001, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:152.79034624525036
+l=-5, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:147.56858199963088
+l=-2, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:165.90270194411545
+l=-0.5, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:164.35956940636027
+
+l=-1, c=10, N=391, dt=0.1, sigma w =0.3, sigma mu=0.001, alpha = 0.8, kv=1 
+log marginals:164.86868795393795
+l=-1, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:303.1682390674493
+l=-1, c=50, N=391, dt=0.2, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:287.64154516293684
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:221.54852755317867
+l=-1, c=50, N=391, dt=0.2, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:288.68576842986596
+l=-1, c=200, N=391, dt=0.05, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:165.0563511282702
+
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=1 
+log marginals:226.75459025621004
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=0.1 
+log marginals:290.88247805107244
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=1e-08, alpha = 0.8, kv=10 
+log marginals:85.87769156506782
+
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=0.001, alpha = 0.8, kv=1 
+log marginals:217.58779855255847
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=0.1, alpha = 0.8, kv=1 
+log marginals:220.3526495576878
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=0.3, alpha = 0.8, kv=1 
+log marginals:222.2515169636262
+l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=1 
+log marginals:223.85695749379465
+
+lista = np.array([-36.709902228644744, -51.71197236975398, -10.571987565216354])
+lista = np.array([184.44161333116838, 192.64350506967486, 173.05400203405475])
+lista = np.array([196.38614100729774, 169.31514569837955, 179.48628596367627])
+lista = np.array([294.295489714146, 317.5345173060023, 277.87261906953114])
+lista = np.array([360.3939462140387, 359.3285007269461, 349.67034751113164])
+lista = np.array([302.7964626913261, 313.43246678668527, 310.6827105501723])
+lista = np.array([290.5451295156816, 300.05613894479706, 313.50837893516064])
+lista = np.array([387.6166665797126, 353.4029061587037, 358.1167373936592, 356.4543179714571])
+lista = np.array([365.53081613561756, 347.98390316026257, 354.1906873707749])l=-1, c=100, N=391, dt=0.1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=1 
+log marginals:217.1729011041996
+l=-1, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=10 
+log marginals:283.16988690774434
+l=-1, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=0.5 
+log marginals:186.29430768682218
+l=-1, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=100 
+log marginals:219.8050123211813
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=10 
+log marginals:226.2312789966637
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=2, alpha = 0.8, kv=10 
+log marginals:195.2001239464952
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.05, alpha = 0.8, kv=10 
+log marginals:197.64753892478512
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=1 
+log marginals:41.358172209794155
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=10000.0 
+log marginals:99.28701282132731
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=1, alpha = 0.8, kv=10000.0 
+log marginals:116.59791823459463
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.1, alpha = 0.8, kv=10000.0 
+log marginals:105.70431068077595
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.1, alpha = 0.8, kv=5000.0 
+log marginals:96.46449607548217
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.5, alpha = 0.8, kv=5000.0 
+log marginals:114.07422805128483
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:111.86821311825494
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:16.416639577087807
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-4.7327887838036355
+l=-0.05, c=10, N=391, dt=1, sigma w =1, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:1.5629702254717082
+l=-0.05, c=10, N=391, dt=1, sigma w =0.1, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-16.025140226922414
+l=-0.05, c=10, N=391, dt=1, sigma w =2, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:12.072053441664803
+l=-0.05, c=10, N=391, dt=1, sigma w =2, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-7.253559340278178
+l=-0.05, c=10, N=391, dt=1, sigma w =2, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:5.265220323866799
+l=-0.05, c=10, N=391, dt=1, sigma w =10, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:13.372549947130537
+l=-0.05, c=10, N=391, dt=1, sigma w =20, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-6.986226777096877
+l=-0.05, c=10, N=391, dt=1, sigma w =5, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:17.330378258770786
+l=-0.05, c=10, N=391, dt=1, sigma w =0.1, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:8.113460373378459
+l=-0.05, c=10, N=391, dt=1, sigma w =1, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:2.1143604477078255
+l=-0.05, c=10, N=391, dt=1, sigma w =4, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-18.646890934325093
+l=-0.05, c=10, N=391, dt=1, sigma w =8, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-28.05914253592466
+l=-0.05, c=10, N=391, dt=1, sigma w =16, sigma mu=0.3, alpha = 0.8, kv=5000.0 
+log marginals:-57.25241687266211
+l=-0.05, c=10, N=391, dt=1, sigma w =0.3, sigma mu=0.3, alpha = 0.8, kv=1000.0 
+log marginals:54.75922715713182
+l=-0.05, c=10, N=391, dt=1, sigma w =0.03, sigma mu=0.1, alpha = 0.8, kv=1000.0 
+log marginals:82.60316769926152
+l=-0.05, c=10, N=391, dt=1, sigma w =0.003, sigma mu=0.1, alpha = 0.8, kv=1000.0 
+log marginals:181.54483253803093
+l=-0.05, c=10, N=391, dt=1, sigma w =0.003, sigma mu=0.001, alpha = 0.8, kv=1000.0 
+log marginals:151.4425556894046
+l=-0.05, c=10, N=391, dt=1, sigma w =0.0003, sigma mu=0.0001, alpha = 0.8, kv=1000.0 
+log marginals:181.4060651862517
+l=-0.05, c=10, N=391, dt=1, sigma w =0.0003, sigma mu=0.0001, alpha = 0.8, kv=1000.0 
+log marginals:177.51186509009545
+l=-0.05, c=10, N=391, dt=1, sigma w =0.00028, sigma mu=0.0001, alpha = 0.8, kv=1000.0 
+log marginals:176.38275444554984
+l=-0.05, c=10, N=391, dt=1, sigma w =0.00028, sigma mu=1e-07, alpha = 0.8, kv=1000.0 
+log marginals:176.1129415315728
+l=-0.05, c=10, N=391, dt=1, sigma w =0.0003, sigma mu=1e-07, alpha = 0.8, kv=1000.0 
+log marginals:152.37366979013197
+l=-0.05, c=10, N=391, dt=1, sigma w =0.00033, sigma mu=1e-07, alpha = 0.8, kv=1000.0 
+log marginals:176.51851397805453
+l=-0.05, c=10, N=391, dt=1, sigma w =0.00031, sigma mu=1e-07, alpha = 0.8, kv=1000.0 
+log marginals:180.3748319797872
+l=-0.05, c=10, N=391, dt=1, sigma w =0.0003, sigma mu=1e-07, alpha = 0.8, kv=1000.0 
+log marginals:156.50311225003574
