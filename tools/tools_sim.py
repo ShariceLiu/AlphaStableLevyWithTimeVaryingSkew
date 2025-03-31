@@ -184,6 +184,12 @@ class alphaStableJumpsProcesser():
         return self.S_mu(sigma_mu) + sigma_mu**2*(C_z(self.epsilon, self.T, self.alpha))**2 * int_fft_u_s(self.l, self.delta_t) \
                     +self.hi_fi_int_f(sigma_mu)
     
+    def Sigma_beta(self, sigma_beta):
+        return sigma_beta**2 * int_fft_u_s(self.l, self.delta_t)
+    
+    def S_beta(self, sigma_beta):
+        return sigma_beta**2 * int_ft_t(self.l, self.delta_t, self.delta_t)
+    
     def S_zm_B(self, sigma_mu):
         return self.hi_fi_vi(sigma_mu) + sigma_mu**2 * int_ft_t(self.l, self.delta_t, self.delta_t)
     
@@ -195,6 +201,8 @@ class alphaStableJumpsProcesser():
             
         return mean_st + C_z(self.epsilon, self.T, self.alpha)*int_ft(self.l, self.delta_t)
     
+    def A_13(self):
+        return int_ft(self.l, self.delta_t)
     
     
     def int_mu(self, mus):
@@ -278,3 +286,25 @@ def noise_variance_C(processor: alphaStableJumpsProcesser, sigma_W, sigma_mu):
     C[-1,:2] = processor.S_zm_B(sigma_mu)
     return C
 
+def transition_matrix_w_drift(processor:alphaStableJumpsProcesser):
+    """
+    return matrix A, with a random drift term
+    """
+    matrix = np.identity(4)
+    matrix[:2,:2] = eAt(processor.l, processor.delta_t)
+    matrix[:2,-2] = processor.A_12()
+    matrix[:2,-1] = processor.A_13()
+    return matrix
+
+def noise_variance_C_w_drift(processor: alphaStableJumpsProcesser, sigma_W, sigma_mu, sigma_beta):
+    C = np.zeros((4,4))
+    C[:2,:2] = processor.S_s_t(sigma_W)+ processor.S_m_z(sigma_mu)+ \
+        sigma_W**2*int_fft(processor.l, processor.delta_t)/processor.T*M_Z_2(processor.epsilon, processor.alpha) +\
+        processor.Sigma_beta(sigma_beta)
+    C[2,2] = processor.delta_t*sigma_mu**2
+    C[:2,2] = processor.S_zm_B(sigma_mu)
+    C[2,:2] = processor.S_zm_B(sigma_mu)
+    C[:2,-1] = processor.S_beta(sigma_beta)
+    C[-1,:2] = processor.S_beta(sigma_beta)
+    C[-1,-1] = processor.delta_t*sigma_beta**2
+    return C

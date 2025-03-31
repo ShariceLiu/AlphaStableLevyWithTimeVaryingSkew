@@ -284,21 +284,21 @@ def simu_pure_noise(mu0, c, delta_t, sigma_mu, alpha, sigma_w, N, drift=0):
     return x_dashed
     
 if __name__=='__main__':
-    l = -0.1
+    l = -0.05
     c = 10
     N = 500
     T = 1
     delta_t = 1
-    sigma_w = 0.01
+    sigma_w = 0.05
     sigma_mus = np.array([0.015, 0.015])
     mu0s = [0.1, 0.05]
     mu0 = 8
     alpha = 1.4
     k_v = 5e4 # 1.5e4 for alpha=0.9
 
-    simu(l, c, N, T, delta_t, sigma_w, sigma_mus[0], mu0, alpha, k_v, save=True)
+    # simu(l, c, N, T, delta_t, sigma_w, sigma_mus[0], mu0, alpha, k_v, save=True)
 
-    # simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
+    simu2d(l, c, N, delta_t, sigma_w, sigma_mus, mu0s, alpha, k_v, savepath = f'{int(alpha*10)}')
     # x_ns = simu_pure_noise(mu0s[0]*0, c, delta_t, 1e-4, alpha, sigma_w, N, drift=-0.1)
     # plt.figure()
     # plt.subplot(2,1,1)
