@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import scipy.stats
 from tools.tools_sim import *
 import scipy
 # from simulation import forward_simulation_1d_w_integrals
@@ -8,6 +9,8 @@ from scipy.stats import invgamma
 from tqdm import tqdm
 from real_data import extract_track, extract_mat_data
 import pandas as pd
+
+from matplotlib import cm
 
 def resample(log_weight_p, mu_p, var_p, E_ns):
     """resample particles, input/output arrays"""
@@ -375,6 +378,8 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
     T: 
     """
     N = len(y_ns)
+
+    step = 1
     
     n_mu0 = np.array([0.0,0.0,sigma_mu0])
     n_mus = np.array([np.array([n_mu0]*P)]*N)
@@ -389,6 +394,8 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
     n_vars[1] = np.array([var_0]*P)
     n_log_ws[0] = np.log(np.ones(P)*(1/P))
     E_ns = np.zeros((N+1,P)) # store exp likelihood of y
+
+    y_1step_preds = np.zeros(N)
     
     # some useful constants
     observation_matrix = np.array([1,0,0])
@@ -401,6 +408,8 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
     else: # iterative object
         delta_ts = delta_t
 
+    mse = 0.0
+
     for n in tqdm(range(N-1)):
         m = n+1
         y_n = y_ns[m]
@@ -410,6 +419,8 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
         
         delta_t_n = delta_ts[n]
         log_likes = np.zeros(P)
+
+        y_hat = np.zeros(P)
         # update
         for p in range(P):
             vs, gammas = generate_jumps(c, T, delta_t_n)
@@ -426,24 +437,136 @@ def particle_filter_1d(y_ns, P, c, T, sigma_mu, sigma_w, noise_sig, alpha,l, del
             # kalman filter update
             n_mus[m,p,:], n_vars[m,p,:,:], sigma_n_prev_n, y_hat_n_prev_n = kalman_filter(A, C, observation_matrix, noise_sig, n_mus[n,p,:], n_vars[n,p,:,:], y_n)
             
+            # mse
+            temp = (A@n_mus[m,p,:])
+            # for i in range(2):
+            #     temp = (A@temp)
+
+            y_hat[p] = observation_matrix@ temp
+
             # update log weight
             norm_sigma_n_prev_n = sigma_n_prev_n /sigma_w**2
             E_ns[m,p] = -(y_n-y_hat_n_prev_n)**2/(norm_sigma_n_prev_n)/2
             beta_w_post_p = beta_w - sum(E_ns[:,p])
             log_like = -0.5*np.log(norm_sigma_n_prev_n)-(alpha_w+m/2)*np.log(beta_w_post_p)\
                     +((m-1)/2+alpha_w)*np.log(beta_w - sum(E_ns[:m,p]))+\
-                    scipy.special.loggamma(m/2+alpha_w)-scipy.special.loggamma(n/2+alpha_w)# -2/2*np.log(2*np.pi)
+                    scipy.special.loggamma(m/2+alpha_w)-scipy.special.loggamma(n/2+alpha_w) -1/2*np.log(2*np.pi)
             n_log_ws[m,p] = n_log_ws[n, p]+ log_like
 
             log_likes[p] = log_like
 
         # normalise weights
-        log_marg += np.log(sum(np.exp(log_likes))/P)
+        log_marg += np.log(np.exp(n_log_ws[m,:]).sum())
         n_log_ws[m,:] = n_log_ws[m,:]- np.log(sum(np.exp(n_log_ws[m,:])))
+
+        
+        if m < N-step:
+            y_1step_preds[m+step] = np.dot(y_hat,np.exp(n_log_ws[m, :]))
+            mse += (y_1step_preds[m+step] - y_ns[m+step])**2
+        # zero step pred
+        # mse += (np.dot(n_mus[m,:,0],np.exp(n_log_ws[m, :])) - y_n)**2
+    
+    # mse = np.dot((y_1step_preds[1:] - y_n))
 
     n_vars /= sigma_w**2 # if marginalizing sigma
 
-    return n_mus, n_vars, n_log_ws, E_ns, log_marg
+    return n_mus, n_vars, n_log_ws, E_ns, log_marg, mse, y_1step_preds
+
+def gaussian_pf_1d(y_ns, sigma_w, noise_sig,l, delta_t,  Cs = None, As = None, trans_As = None, noise_Cs=None, alpha_w = 0.000000000001,beta_w = 0.000000000001):
+    """
+    P: number of particles
+    T: 
+    """
+    N = len(y_ns)
+    
+    P=1
+    n_mu0 = np.array([0.0,0.0])
+    n_mus = np.array([np.array([n_mu0]*P)]*N)
+    # n_mus = np.zeros((N, P, 3))
+    n_vars = np.zeros((N, P, 2, 2))
+
+    # initialize x
+    var_0 = np.identity(2)*5
+    n_vars[0] = np.array([var_0]*P) # size: (P, 2, 2)
+    n_vars[1] = np.array([var_0]*P)
+    E_ns = np.zeros((N+1,P)) # store exp likelihood of y
+
+    n_log_ws = np.zeros((N, P))
+
+    # one step pred of y
+    pred_y = np.zeros(N)
+    
+    # some useful constants
+    observation_matrix = np.array([1,0])
+
+    log_marg = 0.0
+
+    # time
+    if isinstance(delta_t, float) or isinstance(delta_t, int):
+        delta_ts = np.ones([N-1])*delta_t
+    else: # iterative object
+        delta_ts = delta_t
+
+    mse = 0.0
+
+    step = 1
+
+    for n in tqdm(range(N-1)):
+        m = n+1
+        y_n = y_ns[m]
+        
+        delta_t_n = delta_ts[n]
+        log_likes = np.zeros(P)
+
+        y_hat = np.zeros(P)
+        # update
+        for p in range(P):           
+            # transition matrices
+            C = int_fft(l, delta_t_n)*sigma_w**2
+            A = eAt(l, delta_t_n)
+
+            # C = Cs[n]
+            # A = As[n]
+            
+            # kalman filter update
+            n_mus[m,p,:], n_vars[m,p,:,:], sigma_n_prev_n, y_hat_n_prev_n = kalman_filter(A, C, observation_matrix, noise_sig, n_mus[n,p,:], n_vars[n,p,:,:], y_n)
+            
+            # mse
+            temp = (A@n_mus[m,p,:])
+            # for i in range(2):
+            #     temp = (A@temp)
+
+            y_hat[p] = observation_matrix@ temp
+
+            # update log weight
+            norm_sigma_n_prev_n = sigma_n_prev_n /sigma_w**2
+            E_ns[m,p] = -(y_n-y_hat_n_prev_n)**2/(norm_sigma_n_prev_n)/2
+            beta_w_post_p = beta_w - sum(E_ns[:,p])
+            
+            log_like = -0.5*np.log(norm_sigma_n_prev_n)-(alpha_w+m/2)*np.log(beta_w_post_p)\
+                    +((m-1)/2+alpha_w)*np.log(beta_w - sum(E_ns[:m,p]))+\
+                    scipy.special.loggamma(m/2+alpha_w)-scipy.special.loggamma(n/2+alpha_w) -1/2*np.log(2*np.pi)
+            
+            # import pdb;pdb.set_trace()
+
+            log_likes[p] = log_like
+
+        # normalise weights
+        log_marg += log_like
+
+        
+        # mse += (n_mus[m,0,0] - y_n)**2
+        # mse+= (y_hat[0] - y_n)**2
+
+        if m < N-step:
+            pred_y[m+step] = y_hat[0]
+            mse += (y_hat[0] - y_ns[m+step])**2
+        # import pdb;pdb.set_trace()
+
+    n_vars /= sigma_w**2 # if marginalizing sigma
+
+    return n_mus, n_vars,n_log_ws, E_ns, log_marg, mse, pred_y
+   
 
 def particle_filter_2d(y_ns, P, c, T, sigma_mus, sigma_w, noise_sig, alpha,l, delta_t, trans_As = None, noise_Cs=None, alpha_w = 0.000000000001,beta_w = 0.000000000001):
     """P: number of particles"""
@@ -730,7 +853,7 @@ def particle_filter_3d(y_ns, P, c, T, sigma_mus, sigma_w, noise_sig, alpha,l, de
 
     return n_mus, n_vars, n_log_ws, E_ns
 
-def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.000000000001,beta_w = 0.000000000001):
+def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, sigmaw_range=[0.8,1.3],alpha_w = 0.000000000001,beta_w = 0.000000000001):
     # examine data
     (N, num_particles, D) = n_mus.shape
     
@@ -776,7 +899,7 @@ def process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, alpha_w = 0.0
         tot_var_sigma[i] = np.dot(var_sigmas[i,:], np.exp(n_log_ws[i,:])) + np.dot((mean_sigmas[i,:]-tot_mean_sigma[i])*(mean_sigmas[i,:]-tot_mean_sigma[i]),np.exp(n_log_ws[i,:]))
     
     alpha = alpha_w + N*d_a/2
-    xs = np.linspace(sigma_w**2*0.8,sigma_w**2*1.3,100)
+    xs = np.linspace(sigma_w**2*sigmaw_range[0],sigma_w**2*sigmaw_range[1],100)
     fxs = 0
     for p in range(num_particles):
         x_beta = xs/betas[-1,p]
@@ -801,7 +924,7 @@ def inf_1d_fish(num_particles = 200, N=1000, datapath=r'C:\Users\95414\Desktop\C
     # add noise
     y_ns = x_ns #+np.random.normal(0, sigma_w*k_v, N)
 
-    n_mus, n_vars, n_log_ws, E_ns = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t, sigma_mu0)
+    n_mus, n_vars, n_log_ws, E_ns, _, _ = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t, sigma_mu0)
     average, std3, _ ,_, _, marg = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
     with open('experiments\figure\simplified\fish\1d_marginals.txt', 'w') as f:
         line = f'dim={dim}, l={l}, c={c}, N={N}, T={delta_t}, sigma w ={sigma_w}, sigma mu={sigma_mu}, alpha = {alpha}, kv={k_v} \nmarginals:{marg}\n'
@@ -841,7 +964,7 @@ def inf_1d_fish(num_particles = 200, N=1000, datapath=r'C:\Users\95414\Desktop\C
                  color='gray', alpha=0.2)
     plt.savefig(f'experiments/figure/simplified/fish/xs_{int(alpha*10)}_l{int(abs(l))}.png')
 
-def inf_finance(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, sigma_w = 2, sigma_mu = 1, k_v=1):
+def inf_finance(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, sigma_w = 2, sigma_mu = 1, k_v=1, returnlmarg=True):
     if data == 'finance':
         N = 500
         datapath = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\dataEurUS.mat"
@@ -854,7 +977,7 @@ def inf_finance(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, 
         nvda_data_reloaded= pd.read_csv(csvfile, index_col=0, parse_dates=True)
         x_ns = np.array(nvda_data_reloaded['Price']['2025-01-29'])
         x_ns = (x_ns - x_ns[0])
-        x_ns = np.flip(x_ns)
+        x_ns = np.flip(x_ns)[:300] # pick the prev 300 data for const mu
         N=len(x_ns)
         delta_ts = 1
         t_ns = np.linspace(0, len(x_ns),endpoint=False,num=len(x_ns))
@@ -868,10 +991,13 @@ def inf_finance(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, 
     # plt.savefig(r'experiments\figure\real_data\finance\noisy')
 
 
-    n_mus, n_vars, n_log_ws, E_ns, log_marg = particle_filter_1d(y_ns, num_particles, c, T, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_ts)
+    n_mus, n_vars, n_log_ws, E_ns, log_marg, mse, y_1step = particle_filter_1d(y_ns, num_particles, c, T, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_ts)
     # sigma_beta = 1
     # n_mus, n_vars, n_log_ws, E_ns, log_marg = particle_filter_1d_w_drift(y_ns, num_particles, c, T, sigma_mu, sigma_beta,sigma_w, k_v*sigma_w, alpha, l, delta_ts)
-    # return log_marg
+    if returnlmarg:
+        return log_marg, mse/len(y_ns)
+    else:
+        print(f'log marg: {log_marg}, mse: {mse/len(y_ns)}')
 
     average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
     # with open(f'experiments/figure/wdrift/{data}/marginals.txt', 'a') as f:
@@ -879,14 +1005,15 @@ def inf_finance(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, 
     #     f.write(line)
     # np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\finance",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, marg = marg, allow_pickle=True)
 
-    plt.figure(figsize=(8,10))
-    plt.subplot(2,1,1)
+    plt.figure(figsize=(8,5))
+    # plt.subplot(2,1,1)
     plt.ylabel('Centered Stock Price')
     plt.xlabel('Minutes')
     pred_xs = average[:,:2]
     plt.plot(t_ns, pred_xs[:,0])
     # plt.plot(t_ns, x_ns, linestyle = '--', color = 'red')
     plt.scatter(t_ns, x_ns,color='pink',s=5)
+    # plt.plot(t_ns, y_1step, linestyle = '--', color = 'red')
     plt.ylim([min(average[25:,0] - std3[25:,0]),max(average[25:,0] + std3[25:,0])])
     plt.fill_between(t_ns, average[:,0] - std3[:,0], average[:,0] + std3[:,0],
                  color='gray', alpha=0.2)
@@ -902,21 +1029,24 @@ def inf_finance(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, 
                 #  color='gray', alpha=0.2)
     
     
-    plt.subplot(2,1,2)
-    plt.ylabel('mu')
-    plt.plot(t_ns, average[:,-1])
-    plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
-    # plt.ylim([-np.mean(np.abs(average[25:,-1]))*3,np.mean(np.abs(average[25:,-1]))*3])
-    plt.fill_between(t_ns, average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
-                 color='gray', alpha=0.2)
+    # plt.subplot(2,1,2)
+    # plt.ylabel('mu')
+    # plt.plot(t_ns, average[:,-1])
+    # plt.hlines([0.0], t_ns[0], t_ns[-1],linestyle = '--', color = 'green')
+    # plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
+    # # plt.ylim([-np.mean(np.abs(average[25:,-1]))*3,np.mean(np.abs(average[25:,-1]))*3])
+    # plt.fill_between(t_ns, average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
+    #              color='gray', alpha=0.2)
     plt.savefig(f'experiments/figure/simplified/{data}/xs_{int(alpha*10)}_l{int(abs(l))}.png')
-    # return
+    plt.show()
+    return
     plt.figure()
     plt.plot(xs, fxs)
     # plt.axvline(x = sigma_w**2, color = 'g', label = '$\sigma_W^2$',linestyle='dashed',)
     plt.xlabel(r'$\sigma_W^2$')
     plt.ylabel('Posterior')
     plt.savefig(f'experiments/figure/simplified/{data}/sigma_{int(alpha*10)}.png')
+    plt.show()
 
 def inf_finance_w_drift(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1, c=10, sigma_w = 2, sigma_mu = 1, sigma_beta = 1, k_v=1):
     if data == 'finance':
@@ -931,7 +1061,7 @@ def inf_finance_w_drift(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1
         nvda_data_reloaded= pd.read_csv(csvfile, index_col=0, parse_dates=True)
         x_ns = np.array(nvda_data_reloaded['Price']['2025-01-29'])
         x_ns = (x_ns - x_ns[0])
-        x_ns = np.flip(x_ns)
+        x_ns = np.flip(x_ns)[:300]
         N=len(x_ns)
         delta_ts = 1
         t_ns = np.linspace(0, len(x_ns),endpoint=False,num=len(x_ns))
@@ -976,7 +1106,9 @@ def inf_finance_w_drift(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1
     plt.subplot(3,1,2)
     plt.ylabel('mu')
     plt.plot(t_ns, average[:,-2])
+    plt.hlines([0.0], t_ns[0], t_ns[-1],linestyle = '--', color = 'green')
     plt.ylim([min(average[25:,-2] - std3[25:,-2]),max(average[25:,-2] + std3[25:,-2])])
+    # plt.ylim([-0.02,0.02])
     # plt.ylim([-np.mean(np.abs(average[25:,-1]))*3,np.mean(np.abs(average[25:,-1]))*3])
     plt.fill_between(t_ns, average[:,-2] - std3[:,-2], average[:,-2] + std3[:,-2],
                  color='gray', alpha=0.2)
@@ -984,7 +1116,9 @@ def inf_finance_w_drift(num_particles = 200, data = 'nvdia', alpha = 0.8, l = -1
     plt.subplot(3,1,3)
     plt.ylabel('beta')
     plt.plot(t_ns, average[:,-1])
-    plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
+    plt.hlines([0.0], t_ns[0], t_ns[-1],linestyle = '--', color = 'green')
+    # plt.ylim([min(average[25:,-1] - std3[25:,-1]),max(average[25:,-1] + std3[25:,-1])])
+    plt.ylim([-0.2,0.2])
     # plt.ylim([-np.mean(np.abs(average[25:,-1]))*3,np.mean(np.abs(average[25:,-1]))*3])
     plt.fill_between(t_ns, average[:,-1] - std3[:,-1], average[:,-1] + std3[:,-1],
                  color='gray', alpha=0.2)
@@ -1245,7 +1379,7 @@ def test_data(num_particles, datapath='C:/Users/95414/Desktop/CUED/phd/year1/myc
     alpha = data_read['alpha']
     k_v = data_read['k_v']
 
-    n_mus, n_vars, n_log_ws, E_ns,log_marg = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
+    n_mus, n_vars, n_log_ws, E_ns,log_marg,mse = particle_filter_1d(y_ns, num_particles, c, delta_t, sigma_mu, sigma_w, k_v*sigma_w, alpha, l, delta_t)
     average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w)
     np.savez('C:/Users/95414/Desktop/CUED/phd/year1/mycode/data/simu/data/filter_res_test.npz',n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, allow_pickle=True)
 
@@ -1539,10 +1673,269 @@ def marg_wrt_l(alpha = 0.9, label = 'simu_data', num_particles = 200, k =5,  sav
         plt.legend(['Marginals', r'True $\lambda$'])
     plt.savefig(f'experiments/figure/simplified/marg/marg_l_a{int(alpha*10)}_{label}.png')
 
+def dist_nvidia():
+    csvfile = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\NVIDIA CORPORATION (01-23-2025 09.30 _ 01-29-2025 16.00).csv"
+    nvda_data_reloaded= pd.read_csv(csvfile, index_col=0, parse_dates=True)
+    x_ns = np.array(nvda_data_reloaded['Price']['2025-01-29'])
+    x_ns = (x_ns - x_ns[0])
+    x_ns = np.flip(x_ns)[:301]
+
+    dx_ns = x_ns[1:] - x_ns[:-1]
+    print(np.mean(dx_ns),np.median(dx_ns),scipy.stats.skew(dx_ns))
+    plt.hist(dx_ns, bins = 30)
+    plt.vlines(x=[np.mean(dx_ns)],ymin= 0, ymax= 50, linestyles='-',label='mean', colors=['pink'])
+    plt.vlines(x=[np.median(dx_ns)],ymin= 0, ymax= 50, linestyles='-',label='median', colors=['orange'])
+    plt.ylim([0, 45])
+    plt.savefig('experiments/figure/dist/nvidia.png')
+
+def lmarg_vs_sigmu(save = True, add = False, read = True, rep = 2, num_particles = 200, l=-0.05, k_v = 1e3, sigma_w = 2.8e-4, alpha=0.8):
+    # n = 12
+    # list_sigmu = np.linspace(-4, -1, num=n, endpoint=False)
+    list_sigmu = np.array([-4,-3.5,-3,-2.5,-2,-1.8, -1.6,-1.4,-1.2])
+    # list_sigmu = list_sigmu[:3]
+    n = len(list_sigmu)
+    if save:
+        log_margs, mses = np.zeros((n, rep)), np.zeros((n, rep))
+
+        dic_lmarg = {}
+        dic_mse = {}
+        
+        # inf_finance(num_particles=500, alpha=1.2, l=-0.05, k_v=1e3, sigma_mu=1e-3, sigma_w=2.8e-4)
+        for i in range(n):
+            for j in range(rep):
+                log_margs[i,j], mses[i,j] = inf_finance(num_particles=num_particles, alpha=alpha, l=l, k_v=k_v, sigma_mu=10**(list_sigmu[i]), sigma_w=sigma_w) # 1e-7
+            
+            dic_lmarg[f'val{int(-list_sigmu[i]*10)}'] = log_margs[i,:]
+            dic_mse[f'val{int(-list_sigmu[i]*10)}'] = mses[i,:]
+
+        # m_log_margs, var_log_margs = log_margs.mean(axis = 1), log_margs.var(axis = 1)
+        # m_mses, var_mses = mses.mean(axis = 1), mses.var(axis = 1)
+
+        # inf_finance_w_drift(num_particles=1000, alpha=0.8, l=-0.05, k_v=1e3, sigma_mu=1e-10, sigma_beta=1e-10, sigma_w=2.8e-4)
+        log_marg_df, mse_df = pd.DataFrame(dic_lmarg), pd.DataFrame(dic_mse)
+        log_marg_df.to_csv(f'experiments/data/lmarg/lmarg_n{num_particles}_kv{int(k_v)}.csv', index=False)
+        mse_df.to_csv(f'experiments/data/mse/mse_n{num_particles}_kv{int(k_v)}.csv', index=False)
+
+    elif add:
+        log_margs, mses = np.zeros((n, rep)), np.zeros((n, rep))
+        
+        # inf_finance(num_particles=500, alpha=1.2, l=-0.05, k_v=1e3, sigma_mu=1e-3, sigma_w=2.8e-4)
+        for i in range(n):
+            for j in range(rep):
+                log_margs[i,j], mses[i,j] = inf_finance(num_particles=num_particles, alpha=alpha, l=l, k_v=k_v, sigma_mu=10**(list_sigmu[i]), sigma_w=sigma_w) # 1e-7
+
+        dic_lmarg = pd.read_csv(f'experiments/data/lmarg/lmarg_n{num_particles}_kv{int(k_v)}.csv').to_dict(orient='list')
+        dic_mse = pd.read_csv(f'experiments/data/mse/mse_n{num_particles}_kv{int(k_v)}.csv').to_dict(orient='list')
+
+        for i in range(n):
+            dic_lmarg[f'val{int(-list_sigmu[i]*10)}'] = np.append(dic_lmarg[f'val{int(-list_sigmu[i]*10)}'], log_margs[i,:]).flatten()
+            dic_mse[f'val{int(-list_sigmu[i]*10)}'] = np.append(dic_mse[f'val{int(-list_sigmu[i]*10)}'], mses[i,:]).flatten()
+
+        log_marg_df, mse_df = pd.DataFrame(dic_lmarg), pd.DataFrame(dic_mse)
+
+        log_marg_df.to_csv(f'experiments/data/lmarg/lmarg_n{num_particles}_kv{int(k_v)}.csv', index=False)
+        mse_df.to_csv(f'experiments/data/mse/mse_n{num_particles}_kv{int(k_v)}.csv', index=False)
+
+    if read:
+        log_margs = pd.read_csv(f'experiments/data/lmarg/lmarg_n{num_particles}_kv{int(k_v)}.csv').to_numpy()
+        mses = pd.read_csv(f'experiments/data/mse/mse_n{num_particles}_kv{int(k_v)}.csv').to_numpy()
+
+        m_log_margs, var_log_margs = log_margs.mean(axis = 0), log_margs.var(axis = 0)
+        m_mses, var_mses = mses.mean(axis = 0), mses.var(axis = 0)
+
+
+        plt.figure()
+        plt.xlabel(r'$\log_{10} \sigma_\mu$ values')
+        plt.ylabel('log margs')
+        plt.plot(list_sigmu, m_log_margs, label='log margs')
+        plt.fill_between(list_sigmu, m_log_margs + np.sqrt(var_log_margs), m_log_margs - np.sqrt(var_log_margs), color='gray', alpha=0.2)
+        plt.savefig(f'experiments/figure/simplified/marg/marg_vs_sigmu_n{num_particles}_kv{int(k_v)}.png')
+
+        plt.figure()
+        plt.xlabel(r'$\log_{10} \sigma_\mu$ values')
+        plt.ylabel('MSEs')
+        plt.plot(list_sigmu, m_mses, label='MSEs')
+        plt.fill_between(list_sigmu, m_mses + np.sqrt(var_mses), m_mses - np.sqrt(var_mses), color='gray', alpha=0.2)
+        plt.savefig(f'experiments/figure/simplified/marg/mse_vs_sigmu_n{num_particles}_kv{int(k_v)}.png')
+
+    # fig, ax1 = plt.subplots()
+
+    # # left y-axis: log_margs
+    # color1 = 'tab:blue'
+    # ax1.set_xlabel(r'$\log_{10} \sigma_\mu$ values')
+    # ax1.set_ylabel('log margs', color=color1)
+    # ax1.plot(list_sigmu, m_log_margs, color=color1, label='log margs')
+    # ax1.fill_between(list_sigmu, m_log_margs + np.sqrt(var_log_margs), m_log_margs - np.sqrt(var_log_margs), color='gray', alpha=0.2)
+    # ax1.tick_params(axis='y', labelcolor=color1)
+
+    # # right y-axis: mses
+    # ax2 = ax1.twinx()
+    # color2 = 'tab:orange'
+    # ax2.set_ylabel('MSEs', color=color2)
+    # ax2.plot(list_sigmu, m_mses, color=color2, label='MSEs')
+    # ax2.fill_between(list_sigmu, m_mses + np.sqrt(var_mses), m_mses - np.sqrt(var_mses), color='gray', alpha=0.2)
+    # ax2.tick_params(axis='y', labelcolor=color2)
+
+    # # optional: add a title and legend
+    # fig.suptitle(r'Log-Marginal vs MSE across $\sigma_\mu$')
+    # # if you want a combined legend, you can do:
+    # lines_1, labels_1 = ax1.get_legend_handles_labels()
+    # lines_2, labels_2 = ax2.get_legend_handles_labels()
+    # ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper left')
+
+    # plt.tight_layout()
+
+def gaussian_langevin_inf(num_particles = 200, data = 'nvdia', l = -1, sigma_w = 0.1, k_v=1,return_logmarg = True):
+    if data == 'finance':
+        N = 500
+        datapath = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\dataEurUS.mat"
+        x_ns, t_ns = extract_mat_data(datapath)
+        x_ns = x_ns[:N]*5e4 - x_ns[0]*5e4
+        t_ns = t_ns[:N]*5e4
+        delta_ts = t_ns[1:] - t_ns[:-1]
+    else:
+        csvfile = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\NVIDIA CORPORATION (01-23-2025 09.30 _ 01-29-2025 16.00).csv"
+        nvda_data_reloaded= pd.read_csv(csvfile, index_col=0, parse_dates=True)
+        x_ns = np.array(nvda_data_reloaded['Price']['2025-01-29'])
+        x_ns = (x_ns - x_ns[0])
+        x_ns = np.flip(x_ns)[:300] # pick the prev 300 data for const mu
+        N=len(x_ns)
+        delta_ts = 1
+        t_ns = np.linspace(0, len(x_ns),endpoint=False,num=len(x_ns))
+
+    T = 1
+
+    y_ns = x_ns
+
+    n_mus, n_vars, n_log_ws, E_ns, log_marg, mse, pred_y = gaussian_pf_1d(y_ns, sigma_w, k_v*sigma_w, l, delta_ts)
+    # sigma_beta = 1
+    # n_mus, n_vars, n_log_ws, E_ns, log_marg = particle_filter_1d_w_drift(y_ns, num_particles, c, T, sigma_mu, sigma_beta,sigma_w, k_v*sigma_w, alpha, l, delta_ts)
+    if return_logmarg:
+        return log_marg, mse/len(y_ns)
+    else:
+        print(f'log marg: {log_marg}, mse: {mse/len(y_ns)}')
+
+    average, std3, _ ,xs, fxs = process_filter_results(n_mus, n_vars, n_log_ws, E_ns, sigma_w, sigmaw_range=[0.8, 1.3])
+    # with open(f'experiments/figure/wdrift/{data}/marginals.txt', 'a') as f:
+    #     line = f'l={l}, c={c}, N={N}, dt={delta_ts}, sigma w ={sigma_w}, sigma mu={sigma_mu}, alpha = {alpha}, kv={k_v} \nlog marginals:{log_marg}\n'
+    #     f.write(line)
+    # np.savez(r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\alpha_stable_levy\stable_levy_code\data\real_data\infe\finance",n_mus=n_mus, n_vars = n_vars, n_log_ws = n_log_ws, E_ns = E_ns, marg = marg, allow_pickle=True)
+
+    plt.figure(figsize=(8,5))
+    plt.ylabel('Centered Stock Price')
+    plt.xlabel('Minutes')
+    pred_xs = average[:,:2]
+    plt.plot(t_ns, pred_xs[:,0])
+    # plt.plot(t_ns, pred_y, linestyle = '--', color = 'red')
+    plt.scatter(t_ns, x_ns,color='pink',s=5)
+    plt.ylim([min(min(average[25:,0] - std3[25:,0]), min(x_ns))-0.5,max(max(average[25:,0] + std3[25:,0]), max(x_ns))+0.5])
+    plt.fill_between(t_ns, average[:,0] - std3[:,0], average[:,0] + std3[:,0],
+                 color='gray', alpha=0.2)
+    plt.legend(['Particle mean','Data'])
+    
+    # plt.subplot(3,1,2)
+    # plt.ylabel('velocity')
+    # plt.plot(t_ns, pred_xs[:,1])
+    # # plt.scatter(t_ns, y_ns,color='orange',s=5)
+    # # plt.ylim([min(average[25:,1] - std3[25:,1]),max(average[25:,1] + std3[25:,1])])
+    # plt.ylim([-0.5,0.5])
+    # plt.fill_between(t_ns, average[:,1] - std3[:,1], average[:,1] + std3[:,1],
+                #  color='gray', alpha=0.2)
+    
+    plt.savefig(f'experiments/figure/gaussian/{data}/xs_kv{int(k_v)}_l{int(l)}.png')
+
+    plt.figure()
+    plt.plot(xs, fxs)
+    # plt.axvline(x = sigma_w**2, color = 'g', label = '$\sigma_W^2$',linestyle='dashed',)
+    plt.xlabel(r'$\sigma_W^2$')
+    plt.ylabel('Posterior')
+    plt.savefig(f'experiments/figure/gaussian/{data}/sigma_kv{int(k_v)}_l{int(l)}.png')
+
+def gaussian_lgmarg_mse(num_particles = 200, data = 'nvdia',ite = 3,save=True, dim=2):
+    if dim==2:
+        ls = -np.array([5, 1, 0.1, 0.01,0.001])
+        k_v = np.array([0.01,0.1,0.5,1,5])
+        X, Y = np.meshgrid(np.log10(k_v), np.log10(-ls), indexing='xy')
+
+        log_margs, mses = np.zeros([len(ls), len(k_v),ite]), np.zeros([len(ls), len(k_v),ite])
+        
+        for k in range(ite):
+            for i in range(len(ls)):
+                for j in range(len(k_v)):
+                    log_margs[i,j,k], mses[i,j,k] = gaussian_langevin_inf(num_particles=num_particles, data=data, l = ls[i], k_v=k_v[j])
+
+        fig = plt.figure(figsize=plt.figaspect(0.5))
+        ax = fig.add_subplot(1, 2, 1, projection='3d')
+        log_margs = log_margs.mean(axis = 2)
+        surf = ax.plot_surface(X, Y, log_margs, rstride=1, cstride=1, cmap=cm.coolwarm,
+                        linewidth=0, antialiased=False)
+        ax.set_xlabel(r'$\log_{10}k_v$')
+        ax.set_ylabel(r'$\log_{10} |\lambda|$')
+        ax.set_zlabel(r'log marginal')
+        maxid = np.argmax(log_margs)
+        maxid = np.unravel_index(maxid, log_margs.shape)
+        # import pdb;pdb.set_trace()
+        print(f'max log marg: {log_margs[maxid]}, corresponding lambda: {ls[maxid[0]]}, k_v: {k_v[maxid[1]]}')
+
+
+        ax = fig.add_subplot(1, 2, 2, projection='3d')
+        mses = mses.mean(axis=2)
+        surf2 = ax.plot_surface(X, Y, mses, rstride=1, cstride=1, cmap=cm.coolwarm,
+                        linewidth=0, antialiased=False)
+        ax.set_xlabel(r'$\log_{10}k_v$')
+        ax.set_ylabel(r'$\log_{10}|\lambda|$')
+        ax.set_zlabel(r'MSE')
+        maxid = np.argmin(mses)
+        maxid = np.unravel_index(maxid, mses.shape)
+        print(f'min mse: {mses[maxid]}, corresponding lambda: {ls[maxid[0]]}, k_v: {k_v[maxid[1]]}')
+        if save:
+            plt.savefig('experiments/figure/gaussian/nvdia/lgmarg_mse.png')
+        plt.show()
+    if dim == 1:
+        ls = -np.array([5,4,3,2, 1, 0.75,0.5,0.25, 0.1, 0.01,0.001])
+        k_v = 0.5
+
+        log_margs, mses = np.zeros([len(ls),ite]), np.zeros([len(ls),ite])
+        
+        for k in range(ite):
+            for i in range(len(ls)):
+                log_margs[i,k], mses[i,k] = gaussian_langevin_inf(num_particles=num_particles, data=data, l = ls[i], k_v=k_v)
+
+        fig, ax1 = plt.subplots()
+
+        # left y-axis: log_margs
+        color1 = 'tab:blue'
+        ax1.set_xlabel(r'$\log_{10} |\lambda|$ values')
+        ax1.set_ylabel('log margs', color=color1)
+        ax1.plot(np.log10(-ls), log_margs.mean(axis=-1), color=color1, label='log margs')
+        # ax1.fill_between(list_sigmu, m_log_margs + np.sqrt(var_log_margs), m_log_margs - np.sqrt(var_log_margs), color='gray', alpha=0.2)
+        ax1.tick_params(axis='y', labelcolor=color1)
+
+        # right y-axis: mses
+        ax2 = ax1.twinx()
+        color2 = 'tab:orange'
+        ax2.set_ylabel('MSEs', color=color2)
+        ax2.plot(np.log10(-ls), mses.mean(axis=-1), color=color2, label='MSEs')
+        # ax2.fill_between(list_sigmu, m_mses + np.sqrt(var_mses), m_mses - np.sqrt(var_mses), color='gray', alpha=0.2)
+        ax2.tick_params(axis='y', labelcolor=color2)
+
+        # optional: add a title and legend
+        fig.suptitle(r'Log-Marginal vs MSE across $\lambda$')
+        # if you want a combined legend, you can do:
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper left')
+
+        plt.tight_layout()
+        if save:
+            plt.savefig('experiments/figure/gaussian/nvdia/lgmarg_mse_lonly.png')
+        plt.show()
+
 
 if __name__=='__main__':
     # marg_wrt_l(alpha=0.8, num_particles=200, k=5, save=False, label='nvidia')
     alpha = 1.2
+
     # x = simu_2d(save= False, alpha= alpha, sigma_w=0.05, k_v=1e3) # 1e4 for 0.9
     # x = simu_2d_w_drift(save= True, alpha= alpha, sigma_w=0.05, k_v=5e2)
     # # # plot histogram of velocity increments
@@ -1556,10 +1949,16 @@ if __name__=='__main__':
     # plot_result_from_stored_wdrift(alpha=alpha)
     
     
-    # inf_finance(num_particles=500, alpha=1.2, l=-0.05, k_v=1e3, sigma_mu=1e-3, sigma_w=2.8e-4)
-    inf_finance_w_drift(num_particles=200, alpha=1.2, l=-0.05, k_v=1e3, sigma_mu=1e-2, sigma_beta=5e-2, sigma_w=2.8e-4)
+    # lmarg_vs_sigmu(num_particles=20, rep= 3, save=True, add=True, k_v=1e3) #500
+    inf_finance(num_particles=1, alpha=alpha, l=-1, k_v=1, sigma_mu=10**(-4), returnlmarg=False)
+
+    gaussian_langevin_inf(num_particles=200, k_v = 1, l=-1, return_logmarg=False) # seems only fair to fix a k_v value (noise variance)
+    # gaussian_lgmarg_mse(num_particles=200,ite=3,save=True,dim=1)
+
 
 
     # inf_1d_fish(num_particles = 200, N=1000)
     # inf_2d_fish_wdrift(num_particles=500 , N=1200, m=400)
     # inf_3d_fish(alpha= 0.9, num_particles =200, N=1200,m=200,scale=800)
+
+    # dist_nvidia()
