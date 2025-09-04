@@ -30,9 +30,11 @@ def extract_mat_data(filename = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\d
     ts = mat_contents['t_l'][0,0].flatten()
     xs = mat_contents['z_l'][0,0].flatten()
 
-    ts -= ts[0]
+    # return xs, ts
 
-    t0= 0.0
+    # ts -= ts[0]
+
+    t0= ts[0]
     xs_non_rep = [xs[0]]
     ts_non_rep = [ts[0]]
     for x, t in zip(xs[1:], ts[1:]):
@@ -106,7 +108,34 @@ def plot_fish_data():
     plt.xlabel('Time (n)')
     plt.savefig(r'experiments\data\real_data\fish2_x')
 
-if __name__=='__main__':
-    extract_csv()
+def nvidia_tl():
+    csvfile = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\NVDA.USUSD_Ticks_20.06.2025-20.06.2025.csv"
+    nvda_data_reloaded= pd.read_csv(csvfile)
+    x_ns = (np.array(nvda_data_reloaded['Ask'])+np.array(nvda_data_reloaded['Bid']))/2
 
+    nvda_data_reloaded['Local time'] = pd.to_datetime(nvda_data_reloaded['Local time'], format='%d.%m.%Y %H:%M:%S.%f GMT%z')
+    nvda_data_reloaded['Local time'] = (nvda_data_reloaded['Local time'] - nvda_data_reloaded['Local time'].iloc[0]).dt.total_seconds()
+
+    t_ns = np.array(nvda_data_reloaded['Local time'])
+
+    start = 20500
+    end = 21000
+    plt.plot(x_ns[start:end])
+    plt.show()
+
+if __name__=='__main__':
+    csvfile = r"C:\Users\95414\Desktop\CUED\phd\year1\mycode\data\data\NVDA.USUSD_Ticks_20.06.2025-20.06.2025.csv"
+    nvda_data_reloaded= pd.read_csv(csvfile)
+    x_ns = (np.array(nvda_data_reloaded['Ask'])+np.array(nvda_data_reloaded['Bid']))/2
+
+    nvda_data_reloaded['Local time'] = pd.to_datetime(nvda_data_reloaded['Local time'], format='%d.%m.%Y %H:%M:%S.%f GMT%z')
+    nvda_data_reloaded['Local time'] = (nvda_data_reloaded['Local time'] - nvda_data_reloaded['Local time'].iloc[0]).dt.total_seconds()
+
+    t_ns = np.array(nvda_data_reloaded['Local time'])
+
+    start = 20500
+    end = 21000
+    plt.plot(x_ns[start:end])
+    plt.show()
+    # plt.savefig(r'experiments\figure\simplified\nvdia_tl\data.png')
     

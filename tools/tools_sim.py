@@ -167,6 +167,7 @@ class alphaStableJumpsProcesser():
         for i in range(N):
             int_i = int_ft_t(self.l,dt=self.delta_t, dv= self.vs[i])+self.vs[i]* int_ft(self.l, delta_t=self.delta_t-self.vs[i])
             S += self.hGammas[i]*np.outer(self.fVs[i,:],int_i)
+        # import pdb;pdb.set_trace()
 
         return (S + S.T)*sigma_mu**2
     
@@ -224,13 +225,16 @@ def generate_jumps(c, T=1.0, delta=1.0, sigma_mu = -1):
     gamma = 0
     vs = []
     gammas = []
-    while gamma<c:
-        delta_gamma = np.random.exponential(scale = T/delta)
+    
+    # while gamma<c:
+    while gamma< c*delta:
+        # delta_gamma = np.random.exponential(scale = T/delta)
+        delta_gamma = np.random.exponential(scale = 1.0)
         gamma = gamma+delta_gamma
         v_i = np.random.uniform(0,delta)
         vs.append(v_i)
         gammas.append(gamma)
-        
+    # import pdb;pdb.set_trace() 
     gammas = [x for _, x in sorted(zip(vs, gammas), key=lambda pair: pair[0])]
     vs.sort()
 
@@ -275,6 +279,14 @@ def transition_matrix(processor:alphaStableJumpsProcesser):
     matrix[:2,:2] = eAt(processor.l, processor.delta_t)
     matrix[:2,-1] = processor.A_12()
     matrix[-1,-1] = 1
+    return matrix
+
+def transition_matrix_nojump(l, delta_t):
+    """
+    return matrix A, without jumps
+    """
+    matrix = np.eye(3)
+    matrix[:2,:2] = eAt(l, delta_t)
     return matrix
 
 def noise_variance_C(processor: alphaStableJumpsProcesser, sigma_W, sigma_mu):
